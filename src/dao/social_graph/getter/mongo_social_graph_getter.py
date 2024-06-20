@@ -2,8 +2,6 @@ from src.dao.social_graph.getter.social_graph_getter import SocialGraphGetter
 from src.model.social_graph.social_graph import SocialGraph
 from typing import Dict, Optional
 from src.dao.mongo.mongo_dao import MongoDAO
-import bson
-import networkx as nx
 
 
 class MongoSocialGraphGetter(SocialGraphGetter, MongoDAO):
@@ -11,10 +9,10 @@ class MongoSocialGraphGetter(SocialGraphGetter, MongoDAO):
         doc = None
 
         if params is None:
-            doc = self.collection.find_one({"seed_id": bson.int64.Int64(seed_id)})
+            doc = self.collection.find_one({"seed_id": str(seed_id)})
         else:
             doc = self.collection.find_one({
-                "seed_id": bson.int64.Int64(seed_id),
+                "seed_id": str(seed_id),
                 "params": params})
 
         return SocialGraph.fromDict(doc)

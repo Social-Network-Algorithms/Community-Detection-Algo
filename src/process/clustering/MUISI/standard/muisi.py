@@ -21,13 +21,16 @@ class MUISI():
     def __init__(self):
         self.data = MUISIData()
 
-    def gen_clusters(self, muisi_config, word_freq_getter, muisi_cluster_setter):
+    def gen_clusters(self, muisi_config, user_wf_getter, user_rwf_getter, muisi_cluster_setter):
         # TODO: reminder, what is count?
-        user_to_rwf = word_freq_getter.get_relative_user_word_frequency_vector()
-        user_to_wf = word_freq_getter.get_user_word_frequency_vector()
+        user_to_wf = user_wf_getter.get_all_user_word_frequencies_dict()
+        user_to_rwf = user_rwf_getter.get_all_user_relative_word_frequencies_dict()
         user_to_items = self.data.run_uti_pipeline(user_to_rwf, user_to_wf, muisi_config)
         item_to_users = self.data.run_itu_pipeline(user_to_rwf, user_to_wf, muisi_config)
         cluster_list = self.detect_all_communities(user_to_items, item_to_users, muisi_config)
+        print(user_to_items)
+        print(item_to_users)
+        print(cluster_list)
         muisi_cluster_setter.store_clusters(cluster_list, muisi_config)
         
         return cluster_list

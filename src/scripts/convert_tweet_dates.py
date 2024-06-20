@@ -1,7 +1,6 @@
 import os
 import sys
 
-from src.activity.download_user_tweets_activity import DownloadUserTweetsActivity
 import argparse
 import time
 from src.dependencies.injector import Injector
@@ -18,7 +17,7 @@ import gc
 
 log = LoggerFactory.logger(__name__, logging.ERROR)
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/default_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 def process_dates(path=DEFAULT_PATH):
 

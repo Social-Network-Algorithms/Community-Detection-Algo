@@ -1,7 +1,5 @@
 from src.dao.local_neighbourhood_from_RT_users.getter.local_neighbourhood_getter import LocalNeighbourhoodGetter
 from src.model.local_neighbourhood import LocalNeighbourhood
-from typing import Dict
-import bson
 
 
 class MongoLocalNeighbourhoodGetter(LocalNeighbourhoodGetter):
@@ -14,9 +12,11 @@ class MongoLocalNeighbourhoodGetter(LocalNeighbourhoodGetter):
     def get_local_neighbourhood(self, seed_id: str, params=None):
         doc = None
         if params is None:
-            doc = self.collection.find_one({"seed_id": bson.int64.Int64(seed_id)})
+            doc = self.collection.find_one({"seed_id": str(seed_id)})
         else:
             doc = self.collection.find_one({
-                "seed_id": bson.int64.Int64(seed_id),
+                "seed_id": str(seed_id),
                 "params": params})
-        return LocalNeighbourhood.fromDict(doc)
+        if doc is not None:
+            return LocalNeighbourhood.fromDict(doc)
+        return None

@@ -1,5 +1,3 @@
-from typing import List, Dict
-import bson
 from src.model.user import User
 from src.dao.user.setter.user_setter import UserSetter
 
@@ -15,9 +13,9 @@ class MongoUserSetter(UserSetter):
         doc = user.__dict__
 
         if self.contains_user(user.id):
-            self.user_collection.find_one_and_replace({"id": bson.int64.Int64(user.id)}, doc)
+            self.user_collection.find_one_and_replace({"id": str(user.id)}, doc)
         else:
             self.user_collection.insert_one(doc)
 
     def contains_user(self, user_id: str) -> bool:
-        return self.user_collection.find_one({"id": bson.int64.Int64(user_id)}) is not None
+        return self.user_collection.find_one({"id": str(user_id)}) is not None

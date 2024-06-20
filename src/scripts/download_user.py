@@ -5,7 +5,7 @@ from src.shared.logger_factory import LoggerFactory
 
 log = LoggerFactory.logger(__name__)
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/download_user_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 def download_user(name: str, path=DEFAULT_PATH):
     injector = Injector.get_injector_from_file(path)

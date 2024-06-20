@@ -2,9 +2,9 @@ import time
 import functools
 import datetime
 from typing import Union, List
-from src.model.tweet import Tweet
+
+from src.dao.user_tweets.setter.user_tweets_setter import UserTweetsSetter
 from src.dao.twitter.twitter_dao import TwitterGetter
-from src.dao.raw_tweet.setter.raw_tweet_setter import RawTweetSetter
 
 
 class TwitterTweetDownloader():
@@ -12,29 +12,10 @@ class TwitterTweetDownloader():
     Downloads a twitter tweet downloader
     """
 
-    def __init__(self, twitter_getter: TwitterGetter, raw_tweet_setter: RawTweetSetter):
+    def __init__(self, twitter_getter: TwitterGetter, user_tweets_setter: UserTweetsSetter):
         self.twitter_getter = twitter_getter
-        self.raw_tweet_setter = raw_tweet_setter
+        self.user_tweets_setter = user_tweets_setter
 
-    def stream_random_tweets(self, num_tweets=1) -> None:
-        before = self.raw_tweet_setter.get_num_tweets()
-        subscriber = self.Subscriber(self.raw_tweet_setter)
-        try:
-            self.twitter_getter.buffered_stream_tweets(
-                num_tweets=num_tweets,
-                subscriber=subscriber)
-        except Exception as e:
-            after = self.raw_tweet_setter.get_num_tweets()
-            print("Stored only %d tweets" % (after - before))
-            raise e
-
-        after = self.raw_tweet_setter.get_num_tweets()
-        print("Stored %d tweets" % (after - before))
-
-    class Subscriber():
-        def __init__(self, raw_tweet_setter: RawTweetSetter):
-            self.raw_tweet_setter = raw_tweet_setter
-
-        def on_status(self, data):
-            tweet = Tweet.fromTweepyJSON(data._json)
-            self.raw_tweet_setter.store_tweet(tweet)
+    def get_random_tweet(self):
+        random_tweet = self.twitter_getter.get_random_tweet()
+        self.user_tweets_setter.store_tweets(random_tweet.user_id, random_tweet)

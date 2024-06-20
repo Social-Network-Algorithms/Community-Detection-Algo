@@ -2,7 +2,7 @@ import argparse
 from src.shared.utils import get_project_root
 from src.dependencies.injector import Injector
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/user_word_frequency_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 
 def get_user_word_frequency(id, path=DEFAULT_PATH):
@@ -25,8 +25,7 @@ if __name__ == "__main__":
         default=DEFAULT_PATH, help='The path of the config file', type=str)
 
     args = parser.parse_args()
-
-    users = args.users.split(",")
+    users = args.name.split(",")
     for user in users:
         get_user_word_frequency(user, args.path)
 

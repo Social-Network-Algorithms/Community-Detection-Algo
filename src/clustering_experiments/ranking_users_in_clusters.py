@@ -97,7 +97,7 @@ def get_new_intersection_ranking(user, cluster, path=DEFAULT_PATH):
     Returns:
         An ordered list of about 10 highest ranked users sorted by highest rank.
     """
-    sosu, infl1 = get_rankings(user, cluster, path)
+    sosu, infl1 = get_rankings(user, cluster, True, path)
     # Get top 20 users from sosu_ranking
     sosu_ranking = list(sorted(sosu, key=lambda x: (sosu[x][0], sosu[x][1]), reverse=True))[:20]
     infl1_ranking = list(sorted(sosu, key=lambda x: (infl1[x][0], infl1[x][1]), reverse=False))
@@ -109,7 +109,7 @@ def get_new_intersection_ranking(user, cluster, path=DEFAULT_PATH):
             break
         if user in sosu_ranking:
             sosu_ranking.remove(user)
-    return sosu_ranking
+    return sosu, infl1, sosu_ranking
 
 def get_simple_followers_ranking(user, cluster, path=DEFAULT_PATH):
     user_id = csgc.get_user_by_screen_name(user).id
@@ -134,7 +134,7 @@ def get_simple_followers_ranking(user, cluster, path=DEFAULT_PATH):
             break
         if user in lf_ranking:
             lf_ranking.remove(user)
-    return lf_ranking
+    return lf, infl1, lf_ranking
 
 def get_simple_prod_ranking(user, cluster, path=DEFAULT_PATH):
     """Produces a ranking that is the Production ranking
@@ -154,7 +154,7 @@ def get_simple_prod_ranking(user, cluster, path=DEFAULT_PATH):
             break
         if user in prod_ranking:
             prod_ranking.remove(user)
-    return prod_ranking
+    return prod, infl1, prod_ranking
 
 def get_simple_con_ranking(user, cluster, path=DEFAULT_PATH):
     """Produces a ranking that is the Consumption ranking
@@ -174,7 +174,7 @@ def get_simple_con_ranking(user, cluster, path=DEFAULT_PATH):
             break
         if user in con_ranking:
             con_ranking.remove(user)
-    return con_ranking
+    return con, infl1, con_ranking
 
 def get_simple_sosu_ranking(user, cluster, path=DEFAULT_PATH):
     """Produces a ranking that is the Social Support ranking

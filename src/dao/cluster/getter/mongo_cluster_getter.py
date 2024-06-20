@@ -1,7 +1,4 @@
-from src.dao.cluster.getter.cluster_getter import ClusterGetter
 from src.model.cluster import Cluster
-from typing import Dict
-import bson
 
 
 class MongoClusterGetter():
@@ -12,12 +9,13 @@ class MongoClusterGetter():
         self.collection = collection
 
     def get_clusters(self, seed_id: str, params=None):
-        doc = None
         if params is None:
-            doc = self.collection.find_one({"seed_id": bson.int64.Int64(seed_id)})
+            doc = self.collection.find_one({"seed_id": str(seed_id)})
         else:
             doc = self.collection.find_one({
-                "seed_id": bson.int64.Int64(seed_id),
+                "seed_id": str(seed_id),
                 "params": params})
 
-        return [Cluster.fromDict(cluster) for cluster in doc["clusters"]], doc["params"]
+        if doc is not None:
+            return [Cluster.fromDict(cluster) for cluster in doc["clusters"]], doc["params"]
+        return None

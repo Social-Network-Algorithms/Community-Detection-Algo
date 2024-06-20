@@ -25,10 +25,10 @@ def generate_friend_graph_from_tweets(tweet_thresh=1, path=DEFAULT_PATH):
         try:
             # log.info(f"Creating friend graph of {screen_name} from tweets")
 
-            tweet_getter = dao_module.get_user_tweet_getter()
+            tweet_getter = dao_module.get_user_tweets_getter()
             friend_setter = dao_module.get_retweeted_users_setter()
 
-            retweets = tweet_getter.get_retweets_by_user_id(user_id)
+            retweets = tweet_getter.get_user_retweets(user_id)
             dic = {}
             # If number of retweets of tweets from retweet user is greater than threshold, add to friend set
             for retweet in retweets:

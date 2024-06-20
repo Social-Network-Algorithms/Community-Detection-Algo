@@ -1,11 +1,17 @@
+from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
+from src.dao.user_tweets.setter.user_tweets_setter import UserTweetsSetter
 from src.process.ranking.ranker import Ranker
 from typing import Dict, List
 from tqdm import tqdm
 
 class InfluenceTwoRanker(Ranker):
-	def __init__(self, raw_tweet_getter, friends_getter, ranking_setter):
-		self.raw_tweet_getter = raw_tweet_getter
+	def __init__(self, twitter_getter, user_tweets_getter: UserTweetsGetter, user_tweets_setter: UserTweetsSetter,
+				 friends_getter, friends_setter, ranking_setter):
+		self.twitter_getter = twitter_getter
+		self.user_tweets_getter = user_tweets_getter
+		self.user_tweets_setter = user_tweets_setter
 		self.friends_getter = friends_getter
+		self.friends_setter = friends_setter
 		self.ranking_setter = ranking_setter
 		self.ranking_function_name = "influence two"
 
@@ -13,14 +19,26 @@ class InfluenceTwoRanker(Ranker):
 		friends = {}
 		for user_id in user_ids:
 			friends_of_user_id = self.friends_getter.get_user_friends_ids(user_id)
-			friends[user_id] = [str(id) for id in friends_of_user_id]
+			if friends_of_user_id is None:
+				_, friends_result = self.twitter_getter.get_friends_ids_by_user_id(user_id, None)
+				self.friends_setter.store_friends(user_id, friends_result)
+				friends_of_user_id = self.friends_getter.get_user_friends_ids(user_id)
+
+			friends[user_id] = friends_of_user_id
 		return friends
 
 	def score_users(self, user_ids: List[str]):
 		# Score users by summing up the percentage of tweets they make up in all followers' retweets
 		scores = {user_id: [0,0] for user_id in user_ids} # Initialize all scores to 0
 
-		tweets = self.raw_tweet_getter.get_tweets_by_user_ids(user_ids)
+		tweets = []
+		for id in user_ids:
+			user_tweets = self.user_tweets_getter.get_user_tweets(id)
+			if user_tweets is None:
+				self.user_tweets_setter.store_tweets(id, self.twitter_getter.get_tweets_by_user_id(id, 600))
+				user_tweets = self.user_tweets_getter.get_user_tweets(id)
+
+			tweets += user_tweets
 		valid_tweets = [tweet for tweet in tweets if tweet.retweet_user_id != tweet.user_id]
 
 		# Define helper functions

@@ -1,4 +1,3 @@
-from src.activity.download_local_neighbourhood_tweets_activity import DownloadLocalNeighbourhoodTweetsActivity
 import argparse
 import time
 from src.scripts.parser.parse_config import parse_from_file
@@ -10,7 +9,7 @@ from src.shared.utils import get_project_root
 
 log = LoggerFactory.logger(__name__)
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/default_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 
 def download_tweets(user_name: str, path=DEFAULT_PATH):
@@ -26,14 +25,13 @@ def download_tweets(user_name: str, path=DEFAULT_PATH):
 
     seed_id = user_getter.get_user_by_screen_name(user_name).id
     # Full user friend list
-    init_user_friends = user_friend_getter.get_user_friends_ids(seed_id)
     # tweet_processor.process_tweets_by_user_list(init_user_friends)
-    global_clean = friends_cleaner.clean_friends_global(seed_id, init_user_friends, tweet_threshold=50,
+    global_clean = friends_cleaner.clean_friends_global(seed_id, tweet_threshold=50,
                                                         follower_threshold=50, bot_threshold=0)
     clean_list10, removed_list10 = friends_cleaner.clean_friends_local(seed_id, global_clean, local_following=10)
     clean_list10.append(seed_id)
 
-    user_tweet_downloader.stream_tweets_by_user_list(clean_list10)
+    user_tweet_downloader.download_user_tweets_by_user_list(clean_list10)
 
 
 if __name__ == "__main__":

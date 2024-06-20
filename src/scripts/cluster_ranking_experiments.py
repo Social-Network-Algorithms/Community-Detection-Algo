@@ -3,7 +3,6 @@ import sys
 
 import networkx as nx
 
-from src.activity.download_user_tweets_activity import DownloadUserTweetsActivity
 import argparse
 import time
 from src.dependencies.injector import Injector

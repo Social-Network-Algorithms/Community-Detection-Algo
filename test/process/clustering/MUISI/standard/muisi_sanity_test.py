@@ -1,6 +1,6 @@
-from src.shared.utils import get_project_root
-from src.process.clustering.MUISI.standard.muisi import MUISI, MUISIConfig
-from src.process.clustering.MUISI.muisi_config_parser import MUISIConfigParser
+# from src.shared.utils import get_project_root
+# from src.process.clustering.MUISI.standard.muisi import MUISI, MUISIConfig
+# from src.process.clustering.MUISI.muisi_config_parser import MUISIConfigParser
 
 # Init input and output daos
 # config_path = get_project_root() / 'src' / 'process' / 'clustering' / 'muisi' / 'standard' / 'muisi_config.yaml'

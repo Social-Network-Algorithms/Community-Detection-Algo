@@ -24,7 +24,7 @@ class ProcessedTweet:
     """
     A class to represent a processed tweet
     """
-    def __init__(self, id: int, user_id: int, text: Dict):
+    def __init__(self, id: str, user_id: str, text: Dict):
         """
         Default constructor for a processed tweet
 

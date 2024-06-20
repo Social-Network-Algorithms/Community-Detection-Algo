@@ -1,5 +1,4 @@
 from typing import List
-from src.model.user import User
 
 
 class RetweetUsersGetter:

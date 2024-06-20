@@ -3,7 +3,7 @@ from src.shared.utils import get_project_root
 from src.scripts.parser.parse_config import parse_from_file
 from src.dependencies.injector import Injector
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/detect_core_config0.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config//src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 def rank_cluster(seed_id: str, params=None, path=DEFAULT_PATH):
     injector = Injector.get_injector_from_file(path)

@@ -5,16 +5,17 @@ from networkx.algorithms.community.modularity_max import greedy_modularity_commu
 from networkx.algorithms.community.label_propagation import label_propagation_communities
 from datetime import datetime
 from typing import List, Tuple, Union, Dict
+from src.model.cluster import Cluster
+
 
 class LabelPropagation():
-    def gen_clusters(self, user, social_graph_getter, label_prop_cluster_setter):
-        user_friends_graph = social_graph_getter.get_user_to_friends_graph(user)
-        cluster_list = self.get_clusters(user, user_friends_graph)
-        label_prop_cluster_setter.store_clusters(user, cluster_list)
-
+    def gen_clusters(self, user_id, social_graph_getter, label_prop_cluster_setter):
+        user_friends_graph = social_graph_getter.get_social_graph(user_id)
+        cluster_list = self.get_clusters(user_id, user_friends_graph.graph)  # doesnot work for the directed graph in SocialGraph object
+        label_prop_cluster_setter.store_clusters(user_id, cluster_list)
         return cluster_list
 
-    def get_clusters(self, base_user, user_friends_graph, method="") -> Dict: # TODO:
+    def get_clusters(self, base_user, user_friends_graph, method="") -> List[Cluster]: # TODO:
         """
         Return a dictionary representation of the clusters of the local graph.
         """

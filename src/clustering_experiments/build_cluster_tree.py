@@ -123,10 +123,11 @@ def construct_edges_by_similarity(parents: List[ClusterNode],
         if parent_of_child is not None:
             parent_of_child.children.append(child_node)
 
+
 ##################################################################################################
 
 
-def package_cluster_nodes(clusters: List[Cluster], thresh, ranked=False) -> List[ClusterNode]:
+def package_cluster_nodes(base_user: str, clusters: List[Cluster], thresh, ranked=False) -> List[ClusterNode]:
     """
     Package every cluster in clusters into a ClusterTree with no parent and no child.
 
@@ -136,7 +137,7 @@ def package_cluster_nodes(clusters: List[Cluster], thresh, ranked=False) -> List
     trees = []
     for c in clusters:
         if ranked:
-            top_users = rank.rank_users("fchollet", c)
+            top_users = rank.rank_users(base_user, c)
         else:
             top_users = None
         tree = ClusterNode(thresh=thresh, root=c, top_users=top_users)
@@ -164,13 +165,13 @@ def visualize_forest(all_nodes: List[ClusterNode]) -> None:
     Visualize the entire forest, where all_nodes contains all the nodes in the forest
     """
     main_roots = get_main_roots(all_nodes)
-    assert(len(main_roots) != 0)
+    assert (len(main_roots) != 0)
     # If we can't find any main_roots in our forest, then something is wrong since a tree must be rooted somewhere
     G = pgv.AGraph(strict=False, directed=True)
     for i, main_root in enumerate(main_roots):
         # main_root.display()
         main_root.display_cluster(G, str(i))
-    G.layout(prog='dot') # use dot
+    G.layout(prog='dot')  # use dot
     G.draw('graph.png')
 
 
@@ -178,7 +179,7 @@ def visualize_forest1(screen_name: str, main_roots: List[ClusterNode], iter: Opt
     """
     Visualize the entire forest, where all_nodes contains all the nodes in the forest
     """
-    assert(len(main_roots) != 0)
+    assert (len(main_roots) != 0)
     # If we can't find any main_roots in our forest, then something is wrong since a tree must be rooted somewhere
     img_path = f"trees2/{screen_name[:6]}_tree_{iter}.png"
     file_path = f"trees2/{screen_name[:6]}_cluster_nodes_{iter}.txt"
@@ -188,11 +189,11 @@ def visualize_forest1(screen_name: str, main_roots: List[ClusterNode], iter: Opt
         # main_root.display()
         main_root.display_cluster(G, str(i), file_path)
     with open(file_path, "a") as f:
-            f.write("--------------------\n")
-            f.close()
-    G.layout(prog='dot') # use dot
+        f.write("--------------------\n")
+        f.close()
+    G.layout(prog='dot')  # use dot
     G.draw(img_path)
-    
+
 
 def _get_core_detector(user_activity: str):
     """
@@ -224,7 +225,7 @@ def _initialize_nodes(soc_graph, neighbourhood, user: str, cur_thresh: float, us
     clusters = csgc.clustering_from_social_graph(user, refined_social_graph)
 
     clusters_filtered = csgc.filter_by_expected_size(clusters)
-    nodes = package_cluster_nodes(clusters_filtered, cur_thresh, True)
+    nodes = package_cluster_nodes(user, clusters_filtered, cur_thresh, True)
 
     return nodes
 
@@ -251,9 +252,9 @@ def clusters_to_forest(start_thresh: float,
     - start_thresh <= (end_thresh - increment)  # To ensure the forest has at least 2 levels
     - increment != 0
     """
-    assert(0 < start_thresh < end_thresh < 1)
-    assert(increment != 0)
-    assert(start_thresh + increment < end_thresh)
+    assert (0 < start_thresh < end_thresh < 1)
+    assert (increment != 0)
+    assert (start_thresh + increment < end_thresh)
 
     # Print some important info
     print(f"Computing the forest starting from threshold: {start_thresh}\n"
@@ -304,10 +305,9 @@ def dividing_social_graph(start_thresh: float,
                           increment: float,
                           user: str,
                           user_activity: str) -> List[ClusterNode]:
-
-    assert(0 < start_thresh < end_thresh < 1)
-    assert(increment != 0)
-    assert(start_thresh + increment < end_thresh)
+    assert (0 < start_thresh < end_thresh < 1)
+    assert (increment != 0)
+    assert (start_thresh + increment < end_thresh)
 
     # Print some important info
     print(f"Dividing the social graphs into forest starting from threshold: {start_thresh}\n"
@@ -322,30 +322,31 @@ def dividing_social_graph(start_thresh: float,
         csgc.refine_social_graph_jaccard_users(user, soc_graph,
                                                neighbourhood, user_activity, threshold=start_thresh)
     top_nodes = generate_clusters(user, refined_soc_graph, neighbourhood,
-                      start_thresh, increment, end_thresh, user_activity)
+                                  start_thresh, increment, end_thresh, user_activity)
     return top_nodes
 
 
-def generate_soc_graph_and_neighbourhood_from_cluster(node: ClusterNode, neighbourhood: LocalNeighbourhood, user_activity) -> tuple:
+def generate_soc_graph_and_neighbourhood_from_cluster(node: ClusterNode, neighbourhood: LocalNeighbourhood,
+                                                      user_activity) -> tuple:
     cluster = node.root
     user_map = {}
     for user in cluster.users:
-        user_map[user] = list(set(neighbourhood.get_user_activities(user)).intersection(cluster.users)) if user_activity == 'friends' else neighbourhood.get_user_activities(user)
+        user_map[user] = list(set(neighbourhood.get_user_activities(user)).intersection(
+            cluster.users)) if user_activity == 'friends' else neighbourhood.get_user_activities(user)
 
     #base_user_activities = user_map[str(cluster.base_user)]
     cluster_neighbourhood = \
         LocalNeighbourhood(cluster.base_user, None, user_map, neighbourhood.user_activity)
     cluster_soc_graph = \
         csgc.create_social_graph_from_local_neighbourhood(cluster_neighbourhood, user_activity)
-    return cluster_neighbourhood, cluster_soc_graph#, base_user_activities
+    return cluster_neighbourhood, cluster_soc_graph  #, base_user_activities
 
 
 def generate_clusters(base_user: str, soc_graph,
-                                        neighbourhood: LocalNeighbourhood,
-                                        thresh: float, increment: float, end_thresh: float,
-                                        user_activity: str,
-                                        just_first_level: bool = False) -> List[ClusterNode]:
-
+                      neighbourhood: LocalNeighbourhood,
+                      thresh: float, increment: float, end_thresh: float,
+                      user_activity: str,
+                      just_first_level: bool = False) -> List[ClusterNode]:
     if thresh > end_thresh:
         return []
 
@@ -363,7 +364,7 @@ def generate_clusters(base_user: str, soc_graph,
 
     clusters_filtered = csgc.filter_by_expected_size(clusters)
     # Set ranked=True when visualizing tree
-    parent_nodes = package_cluster_nodes(clusters_filtered, thresh, ranked=True)
+    parent_nodes = package_cluster_nodes(base_user, clusters_filtered, thresh, ranked=True)
     if just_first_level:
         return parent_nodes
     thresh += increment
@@ -374,10 +375,10 @@ def generate_clusters(base_user: str, soc_graph,
         if cluster_neighbourhood == neighbourhood:
             continue
         refined_cluster_soc_graph = \
-            csgc.refine_social_graph_jaccard_users(base_user,   cluster_soc_graph,
-            cluster_neighbourhood,
-            user_activity,
-            threshold=thresh)
+            csgc.refine_social_graph_jaccard_users(base_user, cluster_soc_graph,
+                                                   cluster_neighbourhood,
+                                                   user_activity,
+                                                   threshold=thresh)
         # cluster_neighbourhood.users[str(parent_node.root.base_user)] = base_user_activities
         child_nodes = generate_clusters(base_user, refined_cluster_soc_graph,
                                         cluster_neighbourhood,
@@ -445,6 +446,7 @@ def trace_no_split_nodes(roots: List[ClusterNode]) -> List[ClusterNode]:
 
     return result
 
+
 def trace_no_redundant_nodes(roots: List[ClusterNode]) -> List[ClusterNode]:
     """
     Let a "longest non-divergent path" denote any subtree in the forest, such that:
@@ -470,9 +472,10 @@ def trace_no_redundant_nodes(roots: List[ClusterNode]) -> List[ClusterNode]:
         # if root has no splitting
         result.append(root)
         if not _has_no_split(root):
-            result.extend(trace_no_redundant_nodes(root.children))         
+            result.extend(trace_no_redundant_nodes(root.children))
 
     return result
+
 
 def clustering_from_social_graph(screen_name: str, user_activity: str, iter: Optional[int]) -> List[Cluster]:
     """Returns clusters from the social graph and screen name of user."""
@@ -481,18 +484,23 @@ def clustering_from_social_graph(screen_name: str, user_activity: str, iter: Opt
         #all_nodes = clusters_to_forest(0.3, 0.60, 0.05, screen_name)
         #main_roots = get_main_roots(all_nodes)
         # We set lower thresholds for non-friend activities
-        main_roots = dividing_social_graph(0.0001, 0.001, 0.0003, screen_name, user_activity=user_activity)
+        # TODO: decide on start and end threshold and increment
+        # main_roots = dividing_social_graph(0.0001, 0.001, 0.0003, screen_name, user_activity=user_activity)
+        main_roots = dividing_social_graph(0.0005, 0.005, 0.0015, screen_name, user_activity=user_activity)
         # main_roots = dividing_social_graph(0.005, 0.01, 0.001, screen_name, user_activity=user_activity)
+        # main_roots = dividing_social_graph(0.03, 0.6, 0.05, screen_name, user_activity="friends")
         # visualize_forest1(screen_name, main_roots, iter)
         # no_split_nodes = trace_no_split_nodes(main_roots)
         no_redundant_nodes = trace_no_redundant_nodes(main_roots)
         clusters = []
+
         def traverse_tree(node: ClusterNode):
             clusters.append(node.root)
             if len(node.children) == 0:
                 return
             for child in node.children:
                 traverse_tree(child)
+
         for n in no_redundant_nodes:
             # n.root is the cluster at the node n
             # traverse_tree(n)
@@ -501,8 +509,6 @@ def clustering_from_social_graph(screen_name: str, user_activity: str, iter: Opt
     except Exception as e:
         log.exception(e)
         exit()
-
-
 
 
 if __name__ == "__main__":

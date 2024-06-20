@@ -1,6 +1,6 @@
-from src.shared.utils import get_project_root
-from src.process.clustering.MUISI.retweets.muisi_retweet import MUISIRetweet, MUISIRetweetConfig
-from src.process.clustering.MUISI.muisi_config_parser import MUISIConfigParser
+# from src.shared.utils import get_project_root
+# from src.process.clustering.MUISI.retweets.muisi_retweet import MUISIRetweet, MUISIRetweetConfig
+# from src.process.clustering.MUISI.muisi_config_parser import MUISIConfigParser
 
 # Init input and output daos
 # config_path = get_project_root() / 'src' / 'process' / 'clustering' / 'muisi' / 'retweets' / 'muisi_retweets_config.yaml'

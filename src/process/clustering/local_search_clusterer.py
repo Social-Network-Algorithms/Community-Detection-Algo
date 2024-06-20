@@ -8,6 +8,10 @@ from networkx.utils import groups, not_implemented_for, py_random_state
 log = LoggerFactory.logger(__name__)
 
 class LocalSearchClusterer(Clusterer):
+    def cluster(self, seed_id, params):
+        social_graph = self.social_graph_getter.get_social_graph(seed_id, params)
+        self.cluster_by_social_graph(seed_id, social_graph, params)
+
     def cluster_by_social_graph(self, seed_id, social_graph, params):
         graph_for_LS = social_graph.graph.to_undirected()
         nodes = list(graph_for_LS.nodes())

@@ -1,4 +1,3 @@
-from src.activity.download_user_tweets_activity import DownloadUserTweetsActivity
 import argparse
 import matplotlib
 import time

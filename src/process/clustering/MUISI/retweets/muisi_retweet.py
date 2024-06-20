@@ -17,7 +17,9 @@ class MUISIRetweet():
         self.data = MUISIRetweetData()
 
     def gen_clusters(self, muisi_retweet_config, tweet_getter, muisi_retweet_cluster_setter):
-        user_to_retweets = tweet_getter.get_user_tweets(get_retweets=True, lazy=False)
+        # user_to_retweets = tweet_getter.get_user_tweets(get_retweets=True, lazy=False)
+
+        user_to_retweets = tweet_getter.get_all_retweets_dict()
         user_to_rir = self.data.run_utr_pipeline(user_to_retweets)
         cluster_list = self.detect_all_communities(user_to_rir, muisi_retweet_config)
         muisi_retweet_cluster_setter.store_clusters(cluster_list, muisi_retweet_config)
@@ -115,11 +117,10 @@ class MUISIRetweetData:
             #  doc['end'] == datetime.datetime(2019, 9, 1, 0, 0, 0) and user_handle == doc['handle']:
             #     words = []
 
-            for tweet_text in user_to_retweets[user]:
-                if tweet_text[0] not in retweet_to_id:
-                    retweet_to_id[tweet_text[0]] = id
+            for tweet in user_to_retweets[user]:
+                if tweet["text"][0] not in retweet_to_id:
+                    retweet_to_id[tweet["text"][0]] = id
                     id += 1
-
         return retweet_to_id
     
     def user_to_tweet_id(self, user_to_retweets, retweet_to_id):       
@@ -128,15 +129,13 @@ class MUISIRetweetData:
             # if doc['start'] == datetime.datetime(2018, 9, 1, 0, 0, 0) and\
             #  doc['end'] == datetime.datetime(2019, 9, 1, 0, 0, 0) and user_handle == doc['handle']:
             # words = []
-
-            for tweet_text in user_to_retweets[user]:
+            for tweet in user_to_retweets[user]:
                 if user not in user_to_tweet_id:
                     user_to_tweet_id[user] = []
 
-                retweet_id = retweet_to_id[tweet_text[0]]
+                retweet_id = retweet_to_id[tweet["text"][0]]
                 if retweet_id not in user_to_tweet_id[user]:
                     user_to_tweet_id[user].append(retweet_id)
-
         return user_to_tweet_id
 
     def tweet_id_to_user(self, user_to_tweet_id):

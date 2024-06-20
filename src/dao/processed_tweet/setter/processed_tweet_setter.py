@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Set
 from src.model.processed_tweet import ProcessedTweet
 
 
@@ -8,7 +8,10 @@ class ProcessedTweetSetter:
     datastore
     """
 
-    def store_processed_tweet(self, processed_tweet: ProcessedTweet):
+    def store_processed_tweet(self, processed_tweet: ProcessedTweet, check=True):
+        raise NotImplementedError("Subclasses should implement this")
+
+    def get_ids_by_user(self, user_id) -> Set[str]:
         raise NotImplementedError("Subclasses should implement this")
 
     def store_processed_tweets(self, processed_tweets: List[ProcessedTweet]) -> None:

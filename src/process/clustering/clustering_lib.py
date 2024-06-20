@@ -4,8 +4,8 @@ from collections import Counter
 def cluster_relative_frequency(user_to_rwf, cluster) -> Counter:
     rwf_list = []
     for user in user_to_rwf:
-        if user in cluster:
-            rwf_list.append(Counter(user_to_rwf[user]))
+        if user['user_id'] in cluster:
+            rwf_list.append(Counter(user['relative_word_frequency_vector']))
 
     return sum(rwf_list, Counter())
 

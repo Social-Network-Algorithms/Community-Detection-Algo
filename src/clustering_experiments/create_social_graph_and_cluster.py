@@ -30,10 +30,9 @@ def create_social_graph(screen_name: str, user_activity: str, path=DEFAULT_PATH)
 
         user = get_user_by_screen_name(screen_name, path)
         local_neighbourhood_getter = dao_module.get_local_neighbourhood_getter(user_activity)
-        try:
-            local_neighbourhood = local_neighbourhood_getter.get_local_neighbourhood(
-                user.id)
-        except Exception as e:
+        local_neighbourhood = local_neighbourhood_getter.get_local_neighbourhood(
+            user.id)
+        if local_neighbourhood is None:
             # Download the local neighbourhood if it doesn't exist
             log.info(
                 f"Downloading local neighbourhood for {user.screen_name} {user.id}")
@@ -195,8 +194,8 @@ def refine_social_graph_jaccard_users(screen_name: str, social_graph: SocialGrap
 
     log.info("Refining by Jaccard Similarity:")
 
-    MIN_RETWEETS = 3
-    MAX_USERS_RETWEETED = 200
+    MIN_RETWEETS = 3  # TODO: decide
+    MAX_USERS_RETWEETED = 300 # TODO: decide
 
     users_map = {}
     weights_map = {}
@@ -481,7 +480,8 @@ def filter_by_expected_size(cluster_lst: List[Cluster]) -> List[Cluster]:
     filtered_clusters = []
     for cluster in cluster_lst:
         # Size threshold between 10 and 20
-        if len(cluster.users) >= 10:#min(max(expected_size, 10), 20):
+        # TODO: decide on the size threshold to filter out small clusters
+        if len(cluster.users) >= 10:
             filtered_clusters.append(cluster)
 
     return filtered_clusters

@@ -4,16 +4,17 @@ import time
 
 from src.shared.utils import get_project_root
 from src.process.word_frequency.word_frequency import WordFrequency
-from src.process.word_frequency.wf_config_parser import WordFrequencyConfigParser
+import src.dependencies.injector as sdi
+
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 def make_word_frequency():
     def global_word_count():
         word_frequency = WordFrequency()
-        config_path = get_project_root() / 'src' / 'process' / 'word_frequency' / 'wf_config.yaml'
-        word_frequency_parser = WordFrequencyConfigParser(config_path)
-        processed_tweet_getter, _ = word_frequency_parser.create_getter_DAOs()
-        processed_tweet_setter, wf_setter = word_frequency_parser.create_setter_DAOs()
-        word_frequency.gen_global_word_count_vector(processed_tweet_getter, processed_tweet_setter, wf_setter)
+        injector = sdi.Injector.get_injector_from_file(DEFAULT_PATH)
+        dao_module = injector.get_dao_module()
+        user_processed_tweets_getter = dao_module.get_user_processed_tweets_getter()
+        word_frequency.gen_global_word_count_vector(user_processed_tweets_getter)
 
     with daemon.DaemonContext(chroot_directory=None, working_directory='./'):
         # schedule every second, rather than every day

@@ -1,5 +1,4 @@
 from typing import List, Dict
-from src.model.cluster_word_frequency_vector import ClusterWordFrequencyVector
 
 class ClusterRelativeWordFrequencySetter:
     """

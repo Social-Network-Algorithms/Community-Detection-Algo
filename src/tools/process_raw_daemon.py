@@ -4,16 +4,18 @@ import time
 
 from src.shared.utils import get_project_root
 from src.process.raw_tweet_processing.raw_tweet_processor import RawTweetProcessor
-from src.process.raw_tweet_processing.rt_processing_config_parser import RawTweetProcessingConfigParser
+import src.dependencies.injector as sdi
+
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 def process_raw_tweet():
     def main():
         raw_processor = RawTweetProcessor()
-        config_path = get_project_root() / 'src' / 'process' / 'raw_tweet_processing' / 'rt_processing_config.yaml'
-        raw_process_parser = RawTweetProcessingConfigParser(config_path)
-        tweet_getter = raw_process_parser.create_getter_DAOs()
-        tweet_setter, processed_tweet_setter = raw_process_parser.create_setter_DAOs()
-        raw_processor.gen_processed_global_tweets(tweet_getter, tweet_setter, processed_tweet_setter)
+        injector = sdi.Injector.get_injector_from_file(DEFAULT_PATH)
+        dao_module = injector.get_dao_module()
+        tweet_getter = dao_module.get_user_tweets_getter()
+        user_processed_tweet_setter = dao_module.get_user_processed_tweets_getter()
+        raw_processor.gen_processed_tweets(tweet_getter, user_processed_tweet_setter)
 
     with daemon.DaemonContext(chroot_directory=None, working_directory='./'):
         # schedule every second, rather than every day

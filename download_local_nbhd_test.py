@@ -21,9 +21,9 @@ def main(screen_name, user_activity: str):
     local_neighbourhood_getter = dao_module.get_local_neighbourhood_getter(user_activity)
     user = get_user_by_screen_name(screen_name, path)
 
-    # local_neighbourhood_downloader = process_module.get_local_neighbourhood_downloader(user_activity)
-    # local_neighbourhood_downloader.download_local_neighbourhood_by_id(
-    #     user.id)
+    local_neighbourhood_downloader = process_module.get_local_neighbourhood_downloader(user_activity)
+    local_neighbourhood_downloader.download_local_neighbourhood_by_id(
+        user.id)
     local_neighbourhood = local_neighbourhood_getter.get_local_neighbourhood(
         user.id)
     log.info(local_neighbourhood.__dict__)

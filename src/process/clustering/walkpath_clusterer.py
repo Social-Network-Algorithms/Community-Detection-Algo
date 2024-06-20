@@ -8,5 +8,5 @@ import networkx as nx
 from networkx.utils import groups, not_implemented_for, py_random_state
 
 class WalkpathClusterer(Clusterer):
-    def cluster(self, params):
+    def cluster(self, seed_id, params):
         pass

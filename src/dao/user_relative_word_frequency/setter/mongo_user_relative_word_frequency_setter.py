@@ -1,6 +1,6 @@
 from typing import List, Dict
-from src.model.user_word_frequency_vector import UserWordFrequencyVector
 from src.dao.user_relative_word_frequency.setter.user_relative_word_frequency_setter import UserRelativeWordFrequencySetter
+
 
 class MongoUserRelativeWordFrequencySetter(UserRelativeWordFrequencySetter):
     def __init__(self):
@@ -11,7 +11,6 @@ class MongoUserRelativeWordFrequencySetter(UserRelativeWordFrequencySetter):
 
     def store_relative_user_word_frequency_vector(self, user_id:str, relative_user_word_freq_vc: Dict):
         doc = { "user_id": user_id, "relative_word_frequency_vector": relative_user_word_freq_vc}
-
         if self._contains_user_relative(user_id):
             self.relative_user_word_frequency_collection.find_one_and_replace({"user_id": user_id}, doc)
         else:

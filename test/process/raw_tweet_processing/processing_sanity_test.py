@@ -1,6 +1,6 @@
-from src.shared.utils import get_project_root
-from src.process.raw_tweet_processing.raw_tweet_processor import RawTweetProcessor
-from src.process.raw_tweet_processing.rt_processing_config_parser import RawTweetProcessingConfigParser
+# from src.shared.utils import get_project_root
+# from src.process.raw_tweet_processing.raw_tweet_processor import RawTweetProcessor
+# from src.process.raw_tweet_processing.rt_processing_config_parser import RawTweetProcessingConfigParser
 
 # tweet_processor = RawTweetProcessor()
 

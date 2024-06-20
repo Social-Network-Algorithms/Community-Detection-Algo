@@ -54,7 +54,7 @@ class CoreDetector():
             if user is None:
                 msg = "Could not download initial user " + str(screen_name)
                 log.error(msg)
-                raise Error(msg)
+                raise Exception(msg)
 
         log.info("Beginning Core detection algorithm with initial user " + str(screen_name))
         self.detect_core(user.id)

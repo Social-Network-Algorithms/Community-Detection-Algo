@@ -1,4 +1,3 @@
-from src.activity.process_local_neighbourhood_tweets_activity import ProcessLocalNeighbourhoodTweetsActivity
 import argparse
 import time
 from src.dependencies.injector import Injector
@@ -7,12 +6,11 @@ from src.shared.logger_factory import LoggerFactory
 
 log = LoggerFactory.logger(__name__)
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/process_local_neighbourhood_tweets_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 
 def process_local_neighbourhood_tweets(id: str, path=DEFAULT_PATH):
     injector = Injector.get_injector_from_file(path)
-
     dao_module = injector.get_dao_module()
     process_module = injector.get_process_module()
 

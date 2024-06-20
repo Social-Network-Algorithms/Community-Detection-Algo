@@ -2,19 +2,28 @@ import argparse
 import time
 from src.shared.utils import get_project_root
 from src.dependencies.injector import Injector
+from src.tools.user_list_processor import UserListProcessor
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/download_user_friends_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
+default_ul_path = get_project_root() / 'src' / 'tools' / 'user_list'
 
 def download_user_friends(name: str, saturated=False, path=DEFAULT_PATH):
     injector = Injector.get_injector_from_file(path)
     process_module = injector.get_process_module()
 
-    user_friend_downloader = process_module.get_user_friend_downloader()
+    user_friend_downloader = process_module.get_friend_downloader()
+    # if saturated:
+    #     user_friend_downloader.download_friends_users_by_screen_name(name)
+    # else:
+    #     user_friend_downloader.download_friends_ids_by_screen_name(name)
 
-    if saturated:
-        user_friend_downloader.download_friends_users_by_screen_name(name)
-    else:
-        user_friend_downloader.download_friends_ids_by_screen_name(name)
+    ulp = UserListProcessor()
+    user_or_user_list = ulp.user_list_parser(default_ul_path)
+    for user_name in user_or_user_list:
+        if saturated:
+            user_friend_downloader.download_friends_users_by_screen_name(user_name)
+        else:
+            user_friend_downloader.download_friends_ids_by_screen_name(user_name)
 
 if __name__ == "__main__":
     """

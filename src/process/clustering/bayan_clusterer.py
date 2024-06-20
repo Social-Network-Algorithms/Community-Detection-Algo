@@ -11,6 +11,10 @@ import bayanpy
 log = LoggerFactory.logger(__name__)
 
 class BayanClusterer(Clusterer):
+    def cluster(self, seed_id, params):
+        social_graph = self.social_graph_getter.get_social_graph(seed_id, params)
+        self.cluster_by_social_graph(seed_id, social_graph, params)
+
     def cluster_by_social_graph(self, seed_id, social_graph, params):
         clusters_data = []
         if social_graph.graph.number_of_nodes() > 0:

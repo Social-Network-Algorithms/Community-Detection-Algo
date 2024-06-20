@@ -2,7 +2,6 @@ import os
 import sys
 
 from src.process.data_cleaning.data_cleaning_distributions import jaccard_similarity
-from src.activity.download_user_tweets_activity import DownloadUserTweetsActivity
 import argparse
 import time
 from src.dependencies.injector import Injector

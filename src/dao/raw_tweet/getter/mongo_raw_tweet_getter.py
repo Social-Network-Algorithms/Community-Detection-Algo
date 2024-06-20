@@ -1,7 +1,5 @@
-from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from typing import List, Dict
-import bson
 from src.model.tweet import Tweet
 from src.model.user import User
 from src.dao.raw_tweet.getter.raw_tweet_getter import RawTweetGetter
@@ -19,16 +17,20 @@ class MongoRawTweetGetter(RawTweetGetter):
     def set_tweet_collection(self, collection: str) -> None:
         self.collection = collection
 
-    def get_tweet_by_id(self, id: str) -> Tweet:
+    def get_all_tweets(self):
+        return self.collection.find()
+
+    def get_tweet_by_id(self, id: str, user_id: str) -> Tweet:
         """
         Return tweet with id that matches the given id
 
         @param id the id of the tweet to get
+        @param user_id the user id or name associated with the tweet
 
         @return the Tweet object corresponding to the tweet id, or none if no
             tweet matches the given id
         """
-        tweet_doc = self.collection.find_one({"id": bson.int64.Int64(id)})
+        tweet_doc = self.collection.find_one({"id": str(id), "user_id": str(user_id)})
         if tweet_doc is not None:
             return Tweet.fromDict(tweet_doc)
         else:
@@ -51,7 +53,7 @@ class MongoRawTweetGetter(RawTweetGetter):
         @return a list of tweets by the given user
         """
 
-        tweet_doc_list = self.collection.find({"user_id": bson.int64.Int64(user_id)})
+        tweet_doc_list = self.collection.find({"user_id": str(user_id)})
 
         tweets = []
         for doc in tweet_doc_list:
@@ -70,7 +72,7 @@ class MongoRawTweetGetter(RawTweetGetter):
         """
         from_date = datetime.today() + relativedelta(months=-12)
         # from_date = datetime(2020, 6, 30)
-        tweet_doc_list = self.collection.find({"$and": [{"user_id": bson.int64.Int64(user_id)},
+        tweet_doc_list = self.collection.find({"$and": [{"user_id": str(user_id)},
                                                         {"created_at": {"$gte": from_date}}]})
         tweets = []
         for doc in tweet_doc_list:
@@ -85,7 +87,7 @@ class MongoRawTweetGetter(RawTweetGetter):
         for tweet in tweet_doc_list:
             date = tweet['created_at']
             if type(date) != datetime:
-                proper_date = datetime.strptime(date, '%a %b %d %H:%M:%S +0000 %Y')
+                proper_date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
                 pointer = tweet['id']
                 self.collection.update({'id': pointer}, {'$set': {'created_at': proper_date}})
                 print('updated created_at to datetime\n')
@@ -93,12 +95,12 @@ class MongoRawTweetGetter(RawTweetGetter):
                 print('skipping as is already datetime...\n')
 
     def convert_dates_for_user_id(self, user_id):
-        tweet_doc_list = self.collection.find({"user_id": bson.int64.Int64(user_id)})
+        tweet_doc_list = self.collection.find({"user_id": str(user_id)})
         from tqdm import tqdm
         for tweet in tqdm(tweet_doc_list):
             date = tweet['created_at']
             if type(date) != datetime:
-                proper_date = datetime.strptime(date, '%a %b %d %H:%M:%S +0000 %Y')
+                proper_date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
                 pointer = tweet['id']
                 self.collection.update({'id': pointer}, {'$set': {'created_at': proper_date}})
                 # print('updated created_at to datetime\n')
@@ -119,7 +121,7 @@ class MongoRawTweetGetter(RawTweetGetter):
 
         retweets = []
         for tweet in tweets:
-            if tweet.retweet_user_id is not None: # checks if it is a retweet
+            if tweet.retweet_user_id is not None:  # checks if it is a retweet
                 retweets.append(tweet)
 
         return retweets
@@ -137,12 +139,12 @@ class MongoRawTweetGetter(RawTweetGetter):
 
         retweets = []
         for tweet in tweets:
-            if tweet.retweet_user_id is not None: # checks if it is a retweet
+            if tweet.retweet_user_id is not None:  # checks if it is a retweet
                 retweets.append(tweet)
 
         return retweets
     
-    def get_retweets_ids_by_user_id(self, user_id: str) -> List[int]:
+    def get_retweets_ids_by_user_id(self, user_id: str) -> List[str]:
         tweets = self.get_tweets_by_user_id(user_id)
 
         retweets = []
@@ -155,7 +157,7 @@ class MongoRawTweetGetter(RawTweetGetter):
         # if self.collection.count_documents({"user_id": bson.int64.Int64(user_id)}, limit=1) > 0:
         #     return True
         # return False
-        return self.collection.find_one({"user_id": bson.int64.Int64(user_id)}) is not None
+        return self.collection.find_one({"user_id": str(user_id)}) is not None
 
     def get_num_tweets(self) -> int:
         """
@@ -168,8 +170,20 @@ class MongoRawTweetGetter(RawTweetGetter):
         # result. However this is slower
         return self.collection.count({})
 
+    def get_all_retweets_dict(self) -> Dict[str, List[Tweet]]:
+        """Return a dictionary of all retweets in the format {key: retweet_user_id, value:[Tweet]}"""
+        all_retweets_dict = {}
+        for doc in self.collection.find():
+            user_id = doc["user_id"]
+            if user_id not in all_retweets_dict:
+                all_retweets_dict[user_id] = []
+            if doc["retweet_user_id"] is not None:
+                all_retweets_dict[user_id].append(doc)
+
+        return all_retweets_dict
+
     def get_retweets_of_user_by_user_id(self, user_id: str) -> List[Tweet]:
-        retweet_doc_list = self.collection.find({"retweet_user_id": bson.int64.Int64(user_id)})
+        retweet_doc_list = self.collection.find({"retweet_user_id": str(user_id)})
 
         retweets = []
         for doc in retweet_doc_list:
@@ -181,7 +195,7 @@ class MongoRawTweetGetter(RawTweetGetter):
 
         from_date = datetime.today() + relativedelta(months=-12)
         # from_date = datetime(2020, 6, 30)
-        retweet_doc_list = self.collection.find({"$and": [{"retweet_user_id": bson.int64.Int64(user_id)},
+        retweet_doc_list = self.collection.find({"$and": [{"retweet_user_id": str(user_id)},
                                                         {"created_at": {"$gte": from_date}}]})
         retweets = []
         for doc in retweet_doc_list:
@@ -191,7 +205,6 @@ class MongoRawTweetGetter(RawTweetGetter):
 
     def get_tweets_by_user_ids(self, user_ids: List[str]) -> List[Tweet]:
         # Get all tweets of all users in the list
-        user_ids = [bson.int64.Int64(user_id) for user_id in user_ids]
         from_date = datetime(2023, 7, 16) + relativedelta(months=-12)
 
         # tweet_doc_list = self.collection.find({"user_id": {"$in": user_ids}})

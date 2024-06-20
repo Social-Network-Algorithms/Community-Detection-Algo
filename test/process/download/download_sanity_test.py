@@ -1,8 +1,8 @@
-import datetime
-
-from src.shared.utils import get_project_root
-from src.process.download.twitter_downloader import TwitterTweetDownloader, TwitterFriendsDownloader, TwitterFollowersDownloader
-from src.process.download.download_config_parser import DownloadConfigParser
+# import datetime
+#
+# from src.shared.utils import get_project_root
+# from src.process.download.twitter_downloader import TwitterTweetDownloader, TwitterFriendsDownloader, TwitterFollowersDownloader
+# from src.process.download.download_config_parser import DownloadConfigParser
 
 # twitter_downloader = TwitterTweetDownloader()
 # friends_downloader = TwitterFriendsDownloader()

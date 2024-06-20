@@ -1,5 +1,3 @@
-from src.dao.twitter.tweepy_twitter_dao import TweepyTwitterGetter
-from src.dao.user_friend.setter.friend_setter import FriendSetter
 from src.shared.logger_factory import LoggerFactory
 
 log = LoggerFactory.logger(__name__)

@@ -1,8 +1,5 @@
 from src.dao.ranking.getter.ranking_getter import RankingGetter
-from src.dao.mongo.mongo_dao import MongoDAO
 from src.model.ranking import Ranking
-import bson
-
 
 class MongoRankingGetter(RankingGetter):
     def __init__(self):
@@ -14,10 +11,10 @@ class MongoRankingGetter(RankingGetter):
     def get_ranking(self, seed_id: str, params=None):
         doc = None
         if params is None:
-            doc = self.collection.find_one({"seed_id": bson.int64.Int64(seed_id)})
+            doc = self.collection.find_one({"seed_id": str(seed_id)})
         else:
             doc = self.collection.find_one({
-                "seed_id": bson.int64.Int64(seed_id),
+                "seed_id": str(seed_id),
                 "params": params})
 
         new_doc = {"seed_id": seed_id, "ids": doc["ids"], "params": params}

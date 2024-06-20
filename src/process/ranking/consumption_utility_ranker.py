@@ -1,28 +1,41 @@
-from src.model.ranking import Ranking
+from src.dao.twitter.twitter_dao import TwitterGetter
+from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
+from src.dao.user_tweets.setter.user_tweets_setter import UserTweetsSetter
 from src.process.ranking.ranker import Ranker
 from typing import List
 from tqdm import tqdm
 
+
 class ConsumptionUtilityRanker(Ranker):
-    def __init__(self, cluster_getter, raw_tweet_getter, user_getter, ranking_setter):
+    def __init__(self, twitter_getter: TwitterGetter, cluster_getter, user_tweets_getter: UserTweetsGetter,
+                 user_tweets_setter: UserTweetsSetter, user_getter, ranking_setter):
+        self.twitter_getter = twitter_getter
         self.cluster_getter = cluster_getter
-        self.raw_tweet_getter = raw_tweet_getter
+        self.user_tweets_getter = user_tweets_getter
+        self.user_tweets_setter = user_tweets_setter
         self.user_getter = user_getter
         self.ranking_setter = ranking_setter
         self.ranking_function_name = "consumption utility"
 
     def score_users(self, user_ids: List[str]):
         scores = {user_id: [0, 0] for user_id in user_ids} # Initialize all scores to 0
-        tweets = self.raw_tweet_getter.get_tweets_by_user_ids(user_ids)
-        for tweet in tweets:
-            user_id = tweet.user_id
-            if tweet.retweet_id is not None and \
-                    str(tweet.retweet_user_id) in user_ids and \
-                    str(tweet.retweet_user_id) != str(user_id):
-                scores[str(user_id)][0] += 1
-
         for id in tqdm(user_ids):
-                scores[id][1] = self.user_getter.get_user_by_id(id).friends_count
+            user = self.user_getter.get_user_by_id(id)
+            scores[id][1] = user.friends_count
+            user_tweets = self.user_tweets_getter.get_user_tweets(id)
+            if user_tweets is None:
+                self.user_tweets_setter.store_tweets(id, self.twitter_getter.get_tweets_by_user_id(id, 600))
+                user_tweets = self.user_tweets_getter.get_user_tweets(id)
+
+            for tweet in user_tweets:
+                if tweet.retweet_id is not None and \
+                        str(tweet.retweet_user_id) in user_ids and \
+                        str(tweet.retweet_user_id) != str(id):
+                    scores[str(id)][0] += 1
+
+        # for id in tqdm(user_ids):
+        #     user = self.user_getter.get_user_by_id(id)
+        #     scores[id][1] = user.friends_count
                 # retweets = self.raw_tweet_getter.get_retweets_by_user_id_time_restricted(id)
                 # # coefficient = self.raw_tweet_getter.get_tweet_scale_coefficient(id)
                 # for retweet in retweets:

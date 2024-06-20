@@ -9,7 +9,7 @@ from datetime import datetime
 import logging
 log = LoggerFactory.logger(__name__, logging.ERROR)
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/default_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 
 def get_tweets(name: str, path=DEFAULT_PATH):
@@ -32,7 +32,7 @@ def get_tweets(name: str, path=DEFAULT_PATH):
     log.info(date)
 
     if type(date) != datetime:
-        proper_date = datetime.strptime(date, '%a %b %d %H:%M:%S +0000 %Y')
+        proper_date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
         tweet.created_at = proper_date
     log.info(tweet.__dict__)
 

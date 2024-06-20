@@ -1,16 +1,18 @@
-from src.activity.download_raw_tweets_activity import DownloadTweetsActivity
 import argparse
 import time
-from src.scripts.parser.parse_config import parse_from_file
 from src.shared.utils import get_project_root
+import src.dependencies.injector as sdi
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/download_tweets_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + \
+                   "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
+
 
 def download_tweets(num: int, path=DEFAULT_PATH):
-    config = parse_from_file(path)
-
-    activity = DownloadTweetsActivity(config)
-    activity.stream_random_tweets(num_tweets=num)
+    injector = sdi.Injector.get_injector_from_file(path)
+    process_module = injector.get_process_module()
+    tweet_downloader = process_module.get_tweet_downloader()
+    for _ in range(num):
+        tweet_downloader.get_random_tweet()
 
 if __name__ == "__main__":
     """

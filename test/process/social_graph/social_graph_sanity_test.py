@@ -1,6 +1,6 @@
-from src.shared.utils import get_project_root
-from src.process.social_graph.social_graph import SocialGraph
-from src.process.social_graph.social_graph_config_parser import SocialGraphConfigParser
+# from src.shared.utils import get_project_root
+# from src.process.social_graph.social_graph import SocialGraph
+# from src.process.social_graph.social_graph_config_parser import SocialGraphConfigParser
 
 # Init input and output daos
 # config_path = get_project_root() / 'src' / 'process' / 'social_graph' / 'social_graph_config.yaml'

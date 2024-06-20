@@ -1,4 +1,3 @@
-from src.activity.download_local_neighbourhood_tweets_activity import DownloadLocalNeighbourhoodTweetsActivity
 import argparse
 import time
 from src.dependencies.injector import Injector
@@ -12,7 +11,6 @@ DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/default_config.yam
 
 def download_user_friends_tweets(id: str, path=DEFAULT_PATH):
     injector = Injector.get_injector_from_file(path)
-
     dao_module = injector.get_dao_module()
     process_module = injector.get_process_module()
 
@@ -23,8 +21,7 @@ def download_user_friends_tweets(id: str, path=DEFAULT_PATH):
     list = [id] + user_friend_getter.get_user_friends_ids(id)
 
     log.info("Beginning to download tweets for user " + str(id))
-    # user_tweet_downloader.download_user_tweets_by_user_list(list)
-    user_tweet_downloader.stream_tweets_by_user_list(list)
+    user_tweet_downloader.download_user_tweets_by_user_list(list)
 
 
 if __name__ == "__main__":

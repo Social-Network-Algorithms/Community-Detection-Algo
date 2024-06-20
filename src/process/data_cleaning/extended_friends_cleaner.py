@@ -1,15 +1,17 @@
 from copy import deepcopy
 
+from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
 from src.shared.logger_factory import LoggerFactory
 
 log = LoggerFactory.logger(__name__)
 
 class ExtendedFriendsCleaner():
-    def __init__(self, user_friends_getter, cleaned_user_friends_setter, user_getter,
+    def __init__(self, user_friends_getter, cleaned_user_friends_setter, user_getter, user_tweets_getter: UserTweetsGetter,
                  consumption_ranker, retweets_ranker):
         self.user_friends_getter = user_friends_getter
         self.cleaned_user_friends_setter = cleaned_user_friends_setter
         self.user_getter = user_getter
+        self.user_tweets_getter = user_tweets_getter
         self.consumption_ranker = consumption_ranker
         self.retweets_ranker = retweets_ranker
 
@@ -35,7 +37,7 @@ class ExtendedFriendsCleaner():
             #elif user.followers_count < follower_threshold:
                 #log.info("Removed user " + str(id) + " because they have " + str(user.followers_count) + " followers")
                 #continue
-            elif user.statuses_count < tweet_threshold: # TODO: need to change this to the time restricted tweet getter
+            elif len(self.user_tweets_getter.get_tweets_by_user_id_time_restricted(user_id)) < tweet_threshold:
                 log.info("Removed user " + str(id) + " because they have " + str(user.statuses_count) + " tweets")
                 continue
             #elif user.friends_count < friend_threshold:

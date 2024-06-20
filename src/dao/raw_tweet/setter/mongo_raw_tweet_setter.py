@@ -1,11 +1,9 @@
-from typing import List, Dict
-import bson
 from pymongo import InsertOne
 
 from src.model.tweet import Tweet
-from src.shared.utils import get_unique_list
 from src.dao.raw_tweet.setter.raw_tweet_setter import RawTweetSetter
 from datetime import datetime
+
 
 class MongoRawTweetSetter(RawTweetSetter):
     """
@@ -24,7 +22,7 @@ class MongoRawTweetSetter(RawTweetSetter):
         else:
             date = tweet.created_at
             if type(date) != datetime:
-                proper_date = datetime.strptime(date, '%a %b %d %H:%M:%S +0000 %Y')
+                proper_date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
                 tweet.created_at = proper_date
                 # print('updated created_at to datetime\n')
             self.collection.insert_one(tweet.__dict__)
@@ -38,22 +36,23 @@ class MongoRawTweetSetter(RawTweetSetter):
             else:
                 date = tweet.created_at
                 if type(date) != datetime:
-                    proper_date = datetime.strptime(date, '%a %b %d %H:%M:%S +0000 %Y')
+                    proper_date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
                     tweet.created_at = proper_date
                     # print('updated created_at to datetime\n')
                     operations.append(InsertOne(tweet.__dict__))
-                    print('added!')
-        print('waiting to update...')
-        self.collection.bulk_write(operations)
+                    # print('added!')
+        # print('waiting to update...')
+        if len(operations) != 0:
+            self.collection.bulk_write(operations)
 
     def _contains_tweet(self, tweet: Tweet) -> bool:
         # if self.collection.count_documents({"id": bson.int64.Int64(tweet.id)}, limit=1) > 0:
         #     return True
         # return False
-        return self.collection.find_one({"id": bson.int64.Int64(tweet.id)}) is not None
+        return self.collection.find_one({"id": str(tweet.id), "user_id": str(tweet.user_id)}) is not None
 
     def get_num_user_tweets(self, user_id) -> int:
-        return self.collection.count({"user_id": bson.int64.Int64(user_id)})
+        return self.collection.count({"user_id": str(user_id)})
 
     def get_num_tweets(self) -> int:
         """

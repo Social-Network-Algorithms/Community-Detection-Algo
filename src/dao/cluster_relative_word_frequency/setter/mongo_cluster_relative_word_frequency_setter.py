@@ -1,6 +1,6 @@
 from typing import List, Dict
-from src.model.cluster_word_frequency_vector import ClusterWordFrequencyVector
 from src.dao.cluster_relative_word_frequency.setter.cluster_relative_word_frequency_setter import ClusterRelativeWordFrequencySetter
+
 
 class MongoClusterRelativeWordFrequencySetter(ClusterRelativeWordFrequencySetter):
     def __init__(self):

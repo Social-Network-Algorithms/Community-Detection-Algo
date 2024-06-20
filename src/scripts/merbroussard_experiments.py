@@ -9,7 +9,7 @@ from src.shared.utils import get_project_root
 
 log = LoggerFactory.logger(__name__)
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/default_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 
 def check_following(user_name: str, path=DEFAULT_PATH):
@@ -22,11 +22,10 @@ def check_following(user_name: str, path=DEFAULT_PATH):
     friends_cleaner = process_module.get_extended_friends_cleaner()
     user_getter = dao_module.get_user_getter()
     ranking_getter = dao_module.get_ranking_getter()
-    cleaned_friends_getter = dao_module.get_cleaned_user_friend_getter()
 
     seed_id = user_getter.get_user_by_screen_name(user_name).id
 
-    cluster = cleaned_friends_getter.get_user_friends_ids(seed_id)
+    cluster = user_friend_getter.get_user_friends_ids(seed_id)
     cluster.append(seed_id)
     news = ['nytimes', 'kylegriffin1', 'propublica', 'TheAtlantic', 'brianstelter',
             'NewYorker']

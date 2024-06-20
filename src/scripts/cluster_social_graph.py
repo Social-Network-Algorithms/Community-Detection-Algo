@@ -1,16 +1,15 @@
 import argparse
 from src.shared.utils import get_project_root
-from src.scripts.parser.parse_config import parse_from_file
-from src.activity.cluster_social_graph_activity import ClusterSocialGraphActivity
+import src.dependencies.injector as sdi
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/cluster_social_graph_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 
 def cluster_social_graph(seed_id: str, params=None, path=DEFAULT_PATH):
-    config = parse_from_file(path)
-
-    activity = ClusterSocialGraphActivity(config)
-    activity.cluster_social_graph(seed_id, params)
+    injector = sdi.Injector.get_injector_from_file(path)
+    process_module = injector.get_process_module()
+    clusterer = process_module.get_clusterer()
+    clusterer.cluster(seed_id, params)
 
 
 if __name__ == "__main__":

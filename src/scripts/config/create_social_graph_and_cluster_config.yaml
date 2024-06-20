@@ -45,6 +45,12 @@ inout-datastore:
             location: "mongodb://localhost:27017"
             datastore-name: "Data"
             collection-name: "UserTweets"
+    UserProcessedTweet:
+        type: "Mongo"
+        config:
+            location: "mongodb://localhost:27017"
+            datastore-name: "Data"
+            collection-name: "UserProcessedTweets"
     SocialGraph:
         type: "Mongo"
         config:
@@ -105,3 +111,29 @@ inout-datastore:
             location: "mongodb://localhost:27017"
             datastore-name: "Data"
             collection-name: "GlobalWordFrequency"
+    RawTweet:
+        type: "Mongo"
+        config:
+            location: "mongodb://localhost:27017"
+            datastore-name: "Data"
+            collection-name: "RawTweet"
+    Followers:
+        type: "Mongo"
+        config:
+            location: "mongodb://localhost:27017"
+            datastore-name: "Data"
+            collection-name: "Followers"
+#input_datastore:
+#    RawTweet:
+#        type: "Mongo"
+#        config:
+#            location: "mongodb://localhost:27017"
+#            datastore-name: "Data"
+#            collection-name: "RawTweet"
+#output_datastore:
+#    RawTweet:
+#        type: "Mongo"
+#        config:
+#            location: "mongodb://localhost:27017"
+#            datastore-name: "Data"
+#            collection-name: "RawTweet"

@@ -5,5 +5,5 @@ class Clusterer():
         self.cluster_setter = cluster_setter
         self.user_friend_getter = user_friend_getter
 
-    def cluster(self, params):
+    def cluster(self, seed_id, params):
         raise NotImplementedError("Subclasses should implement this")

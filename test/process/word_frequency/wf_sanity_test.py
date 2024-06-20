@@ -1,6 +1,6 @@
-from src.shared.utils import get_project_root
-from src.process.word_frequency.word_frequency import WordFrequency
-from src.process.word_frequency.wf_config_parser import WordFrequencyConfigParser
+# from src.shared.utils import get_project_root
+# from src.process.word_frequency.word_frequency import WordFrequency
+# from src.process.word_frequency.wf_config_parser import WordFrequencyConfigParser
 
 # word_freq = WordFrequency()
 

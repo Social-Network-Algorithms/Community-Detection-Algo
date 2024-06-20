@@ -1,6 +1,5 @@
 from src.dao.community.setter.community_setter import CommunitySetter
 from typing import List
-import bson
 
 
 class MongoCommunitySetter(CommunitySetter):

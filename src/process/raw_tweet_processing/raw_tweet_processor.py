@@ -1,56 +1,76 @@
 import nltk
 import re
 import datetime
+
+from src.dao.user.getter.user_getter import UserGetter
+from src.dao.user_processed_tweets.setter.user_processed_tweets_setter import UserProcessedTweetsSetter
+from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
+from src.model.processed_tweet import ProcessedTweet
 from src.model.tweet import Tweet
+
+
 # from src.model.processed_tweet import ProcessedTweet
 
 class RawTweetProcessor():
     def __init__(self):
         nltk.download('stopwords')
 
-    def gen_processed_global_tweets(self, tweet_getter, tweet_setter, processed_tweet_setter) -> None:
-        """
-        Processes tweets retrieved from a getter, and stores them using the given getters
+    # def gen_processed_global_tweets(self, tweet_getter: UserTweetsGetter, user_processed_tweet_setter: UserProcessedTweetsSetter) -> None:
+    #     """
+    #     Processes tweets retrieved from a getter, and stores them using the given getters
+    #
+    #     @param tweet_getter dao to retrieve tweets
+    #     @param user_processed_tweet_setter dao to store the processed tweets
+    #     """
+    #     global_tweet_list = tweet_getter.get_all_tweets()
+    #     processed_global_tweet_list = list(map(self._process_tweet_text, global_tweet_list))
+    #     for processed_global_tweet in processed_global_tweet_list:
+    #         user_processed_tweet_setter.store_processed_tweet(processed_global_tweet)
+    #     user_processed_tweet_setter.store_global_processed_tweets(processed_global_tweet_list)
+    #     # tweet_setter.update_global_tweet_state()
 
-        @param tweet_getter dao to retrieve tweets
-        @param tweet_setter dao to update the state of raw tweets to indicate they have been processed
-        @param processed_tweet_setter dao to store the processed tweets
-        """
-
-        global_tweet_list = tweet_getter.get_global_tweets()
-        processed_global_tweet_list = list(map(self._process_tweet_text, global_tweet_list))
-        processed_tweet_setter.store_global_processed_tweets(processed_global_tweet_list)
-        tweet_setter.update_global_tweet_state()
-
-    def gen_processed_user_tweets(self, tweet_getter, tweet_setter, processed_tweet_setter) -> None:
+    def gen_processed_user_tweets(self, screen_name: str, user_getter: UserGetter, tweet_getter: UserTweetsGetter,
+                                  user_processed_tweet_setter: UserProcessedTweetsSetter) -> None:
         """
         Assume that the input dao contains tweets associated with users.
-        The common format is: {user: [tweet text]}.
+        The common format is: {[Tweet object]}.
         Return and store processed user tweets.
         Update user tweet database to reflect processed tweet state.
         """
+        assert (type(screen_name) is str)
+        user_id = user_getter.get_user_by_screen_name(screen_name).id
+        all_user_tweets = tweet_getter.get_user_tweets(user_id)
+        all_processed_tweets = []
+        for tweet in all_user_tweets:
+            processed_tweet = ProcessedTweet.fromTweet(tweet)
+            all_processed_tweets.append(processed_tweet)
+        user_processed_tweet_setter.store_processed_tweets(user_id, all_processed_tweets)
 
-        user_to_tweets = tweet_getter.get_user_tweets()
-        user_to_processed_tweet_list = {}
-
-        for user in user_to_tweets:
-            tweet_list = user_to_tweets[user]
-            # processed_tweet_list = map(self._process_tweet_text, tweet_list)
-            processed_tweet_list = map(self._process_tweet_text, tweet_list)
-            user_to_processed_tweet_list[user] = processed_tweet_list
-
-        processed_tweet_setter.store_user_processed_tweets(user_to_processed_tweet_list)
-        tweet_setter.update_user_tweet_state()
-
-    def _process_tweet_text(self, tweet: Tweet): # -> ProcessedTweet:
+    def gen_processed_tweets(self, tweet_getter: UserTweetsGetter, user_processed_tweet_setter: UserProcessedTweetsSetter) -> None:
         """
-        Processes a given tweet
+        Assume that the input dao contains tweets associated with users.
+        The common format is: {[Tweet object]}.
+        Return and store processed user tweets.
+        Update user tweet database to reflect processed tweet state.
+        """
+        all_tweets_dict = tweet_getter.get_all_tweets_dict()
 
-        @param tweet the raw, unprocessed tweet
+        for user_id in all_tweets_dict:
+            all_user_tweets = all_tweets_dict[user_id]
+            all_user_processed_tweets = []
+            for tweet in all_user_tweets:
+                processed_tweet = ProcessedTweet.fromTweet(tweet)
+                all_user_processed_tweets.append(processed_tweet)
+            user_processed_tweet_setter.store_processed_tweets(user_id, all_user_processed_tweets)
+
+    def _process_tweet_text(self, tweet_text: str):  # -> ProcessedTweet:
+        """
+        Processes a given tweet text
+
+        @param tweet the raw, unprocessed tweet text
         @return the processed tweet
         """
-        text = tweet.get_text()
-        text = text.lower()
+        text = tweet_text.lower()
 
         # Filter links, numbers, and emojis
         text = re.sub(r"\bhttps:\S*\b", "", text)

@@ -1,10 +1,10 @@
-from src.model.ranking import Ranking
 from src.process.ranking.ranker import Ranker
 from typing import List
 
 
 class LocalFollowersRanker(Ranker):
-    def __init__(self, cluster_getter, user_getter, friends_getter, ranking_setter):
+    def __init__(self, twitter_getter, cluster_getter, user_getter, friends_getter, ranking_setter):
+        self.twitter_getter = twitter_getter
         self.cluster_getter = cluster_getter
         self.user_getter = user_getter
         self.ranking_setter = ranking_setter
@@ -16,7 +16,10 @@ class LocalFollowersRanker(Ranker):
 
         user_friends = {}
         for user in user_ids:
-            user_friends[user] = [str(friend) for friend in self.friends_getter.get_user_friends_ids(user)] # list of int objects
+            friends = self.friends_getter.get_user_friends_ids(user)
+            if friends is None:
+                _, friends = self.twitter_getter.get_friends_ids_by_user_id(user)
+            user_friends[user] = friends  # list of int objects
         for user in user_ids:
             local_followers = 0
             for friend in user_ids:

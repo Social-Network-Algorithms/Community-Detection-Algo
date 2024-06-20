@@ -1,25 +1,24 @@
 #!/usr/bin/env python
-import click    
+import time
+
+import click
 from src.shared.utils import get_project_root
 from src.tools.user_list_processor import UserListProcessor
+import src.dependencies.injector as sdi
 
 # Download
 import src.tools.download_daemon as download_daemon
 from src.shared.utils import get_date
 from src.process.download.twitter_downloader import TwitterTweetDownloader, TwitterFriendsDownloader, TwitterFollowersDownloader
-from src.process.download.download_config_parser import DownloadConfigParser
 
 # Raw Tweet Processing 
 from src.process.raw_tweet_processing.raw_tweet_processor import RawTweetProcessor
-from src.process.raw_tweet_processing.rt_processing_config_parser import RawTweetProcessingConfigParser 
 
 # Word Frequency
 from src.process.word_frequency.word_frequency import WordFrequency
-from src.process.word_frequency.wf_config_parser import WordFrequencyConfigParser 
 
 # Social Graph
 from src.process.social_graph.social_graph import SocialGraph
-from src.process.social_graph.social_graph_config_parser import SocialGraphConfigParser
 
 # Affinity Propagation
 from src.process.clustering.affinity_propagation.affinity_propagation import AffinityPropagation
@@ -35,6 +34,12 @@ from src.process.clustering.MUISI.muisi_config_parser import MUISIConfigParser
 
 # MUISI Retweets
 from src.process.clustering.MUISI.retweets.muisi_retweet import MUISIRetweet, MUISIRetweetConfig
+
+path = str(get_project_root()) + \
+                   "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
+injector = sdi.Injector.get_injector_from_file(path)
+process_module = injector.get_process_module()
+dao_module = injector.get_dao_module()
 
 # CLI Helpers
 def get_user():
@@ -53,11 +58,13 @@ def get_user():
 # Event handlers
 def run_download():
     click.echo("Provide the full path the the download config(leave blank to set to default)")
-    default_path = get_project_root() / 'src' / 'process' / 'download' / 'download_config.yaml'
-    download_config_path = click.prompt("Path", default_path)
-    download_config_parser = DownloadConfigParser(download_config_path)
-    tweepy_getter, user_friends_getter = download_config_parser.create_getter_DAOs()
-    tweet_mongo_setter, user_friends_setter, user_followers_setter = download_config_parser.create_setter_DAOs()
+    twitter_getter = dao_module.get_twitter_getter()
+
+    user_friends_getter = dao_module.get_user_friend_getter()
+    user_friends_setter = dao_module.get_user_friend_setter()
+    user_tweets_setter = dao_module.get_user_tweets_setter()
+    user_followers_setter = dao_module.get_user_follower_setter()
+    raw_tweet_setter = dao_module.get_raw_tweet_setter()
 
     click.echo("Download Types:")
     click.echo("1. Twitter Tweet Download")
@@ -75,19 +82,19 @@ def run_download():
             # TODO: follow by this example
             click.echo("Downloading User Tweets")
             use_user_list, user_or_user_list, ulp = get_user()
-            num_tweets = click.prompt("Number of Tweets(leave blank to get all)", type=int)
+            # num_tweets = click.prompt("Number of Tweets(leave blank to get all)", type=int)
             if click.confirm("Do you want to specify a start and end date?"):
                 start_date = get_date(click.prompt("Start Date(YYYY-MM-DD)"))
                 end_date = get_date(click.prompt("End Date(YYYY-MM-DD)"))
                 if use_user_list:
-                    ulp.run_function_by_user_list(tweet_downloader.gen_user_tweets, user_or_user_list, tweepy_getter, tweet_mongo_setter, num_tweets, start_date, end_date)
+                    ulp.run_function_by_user_list(tweet_downloader.gen_user_tweets, user_or_user_list, twitter_getter, user_tweets_setter, None, start_date, end_date)
                 else:    
-                    tweet_downloader.gen_user_tweets(user_or_user_list, tweepy_getter, tweet_mongo_setter, num_tweets, start_date, end_date)
+                    tweet_downloader.gen_user_tweets(user_or_user_list, twitter_getter, user_tweets_setter, None, start_date, end_date)
             else:
                 if use_user_list:
-                    ulp.run_function_by_user_list(tweet_downloader.gen_user_tweets, user_or_user_list, tweepy_getter, tweet_mongo_setter, num_tweets)
+                    ulp.run_function_by_user_list(tweet_downloader.gen_user_tweets, user_or_user_list, twitter_getter, user_tweets_setter, None)
                 else:    
-                    tweet_downloader.gen_user_tweets(user_or_user_list, tweepy_getter, tweet_mongo_setter, num_tweets)
+                    tweet_downloader.gen_user_tweets(user_or_user_list, twitter_getter, user_tweets_setter, None)
         elif tweet_type == 2:
             click.echo("Downloading Random Tweets")
             click.echo("Due to Tweepy constraints, if you want to download multiple tweets, you should launch a daemon")
@@ -95,7 +102,7 @@ def run_download():
                 click.echo("Launching daemon")
                 download_daemon.download_random_tweet()
             else:    
-                tweet_downloader.gen_random_tweet(tweepy_getter, tweet_mongo_setter)
+                tweet_downloader.gen_random_tweet(twitter_getter, raw_tweet_setter)
     elif download_type == 2:
         click.echo("Friend Download Types")
         click.echo("1. User Friends")
@@ -106,39 +113,37 @@ def run_download():
         if friend_type == 1:
             click.echo("Downloading user friends")
             use_user_list, user_or_user_list, ulp = get_user()
-            num_friends = click.prompt("Number of Friends(leave blank to get all)", type=int)
+            # num_friends = click.prompt("Number of Friends(leave blank to get all)", type=int)
             if use_user_list:
-                ulp.run_function_by_user_list(friends_downloader.gen_friends_by_screen_name, user_or_user_list, tweepy_getter, user_friends_setter, num_friends)
+                ulp.run_function_by_user_list(friends_downloader.gen_friends_ids_by_screen_name_or_id, user_or_user_list, twitter_getter, user_friends_setter, None)
             else:
-                friends_downloader.gen_friends_by_screen_name(user_or_user_list, tweepy_getter, user_friends_setter, num_friends)
+                friends_downloader.gen_friends_ids_by_screen_name_or_id(user_or_user_list, twitter_getter, user_friends_setter, None)
         elif friend_type == 2:
-            click.echo("Downloading user local neightborhood")
+            click.echo("Downloading user local neighborhood")
             use_user_list, user_or_user_list, ulp = get_user()
             if use_user_list:
-                ulp.run_function_by_user_list(friends_downloader.gen_user_local_neighborhood, user_or_user_list, tweepy_getter, user_friends_getter, user_friends_setter)   
+                ulp.run_function_by_user_list(friends_downloader.gen_user_local_neighborhood, user_or_user_list, twitter_getter, user_friends_getter, user_friends_setter)
             else:
-                friends_downloader.gen_user_local_neighborhood(user_or_user_list, tweepy_getter, user_friends_getter, user_friends_setter)
+                friends_downloader.gen_user_local_neighborhood(user_or_user_list, twitter_getter, user_friends_getter, user_friends_setter)
         else:
             raise Exception("Invalid input")
     elif download_type == 3:
         click.echo("Downloading followers")
         use_user_list, user_or_user_list, ulp = get_user()
-        num_followers = click.prompt("Number of Followers(leave blank to get all)", type=int)
+        # num_followers = click.prompt("Number of Followers(leave blank to get all)", type=int)
         followers_downloader = TwitterFollowersDownloader()
         if use_user_list:
-            ulp.run_function_by_user_list(followers_downloader.gen_followers_by_screen_name, user_or_user_list, tweepy_getter, user_followers_setter, num_followers)
+            ulp.run_function_by_user_list(followers_downloader.gen_followers_by_screen_name_or_id, user_or_user_list, twitter_getter, user_followers_setter, None)
         else:
-            followers_downloader.gen_followers_by_screen_name(user_or_user_list, tweepy_getter, user_followers_setter, num_followers)
+            followers_downloader.gen_followers_by_screen_name_or_id(user_or_user_list, twitter_getter, user_followers_setter, None)
     else:
         raise Exception("Invalid input")
 
 def run_rt_processing():
     click.echo("Provide the full path the the raw tweet processing config(leave blank to set to default)")
-    default_path = get_project_root() / 'src' / 'process' / 'raw_tweet_processing' / 'rt_processing_config.yaml'
-    rt_processing_config_path = click.prompt("Path", default_path)
-    rt_processing_config_parser = RawTweetProcessingConfigParser(rt_processing_config_path)
-    tweet_getter = rt_processing_config_parser.create_getter_DAOs()
-    tweet_setter, processed_tweet_setter = rt_processing_config_parser.create_setter_DAOs()
+    user_tweets_getter = dao_module.get_user_tweets_getter()
+    user_processed_tweet_setter = dao_module.get_user_processed_tweets_setter()
+    user_getter = dao_module.get_user_getter()
     tweet_processor = RawTweetProcessor()
 
     click.echo("Process Types")
@@ -148,19 +153,20 @@ def run_rt_processing():
 
     if process_type == 1:
         click.echo("Processing global tweets")
-        tweet_processor.gen_processed_global_tweets(tweet_getter, tweet_setter, processed_tweet_setter)
+        tweet_processor.gen_processed_tweets(user_tweets_getter, user_processed_tweet_setter)
     elif process_type == 2:
         click.echo("Processing user tweets")
-        tweet_processor.gen_processed_user_tweets(tweet_getter, tweet_setter, processed_tweet_setter)
+        use_user_list, user_or_user_list, ulp = get_user()
+        if use_user_list:
+            ulp.run_function_by_user_list(tweet_processor.gen_processed_user_tweets, user_or_user_list,
+                                          user_getter, user_tweets_getter, user_processed_tweet_setter)
+        else:
+            tweet_processor.gen_processed_user_tweets(user_or_user_list, user_getter, user_tweets_getter, user_processed_tweet_setter)
     else:
         raise Exception("Invalid input")
 
 def run_wf():
-    default_path = get_project_root() / 'src' / 'process' / 'word_frequency' / 'wf_config.yaml'
-    wf_config_path = click.prompt("Path", default_path)
-    wf_config_parser = WordFrequencyConfigParser(wf_config_path)
-    processed_tweet_getter, wf_getter = wf_config_parser.create_getter_DAOs()
-    processed_tweet_setter, wf_setter = wf_config_parser.create_setter_DAOs()
+    user_processed_tweets_getter = dao_module.get_user_processed_tweets_getter()
     word_freq = WordFrequency()
 
     click.echo("Word Vector Types")
@@ -173,26 +179,29 @@ def run_wf():
 
     if wf_type == 1:
         click.echo("Computing global word count vector")
-        word_freq.gen_global_word_count_vector(processed_tweet_getter, processed_tweet_setter, wf_setter)
+        word_freq.gen_global_word_count_vector(user_processed_tweets_getter)
     elif wf_type == 2:
         click.echo("Computing global word frequency vector")
-        word_freq.gen_global_word_frequency_vector(wf_getter, wf_setter)
+        wf_setter = dao_module.get_global_word_frequency_setter()
+        word_freq.gen_global_word_frequency_vector(user_processed_tweets_getter, wf_setter)
     elif wf_type == 3:
         click.echo("Computing user word count vector")
-        word_freq.gen_user_word_count_vector(processed_tweet_getter, processed_tweet_setter, wf_setter)
+        word_freq.gen_user_word_count_vector(user_processed_tweets_getter)
     elif wf_type == 4:
         click.echo("Computing user word frequency vector")
-        word_freq.gen_user_word_frequency_vector(wf_getter, wf_setter)
+        wf_setter = dao_module.get_user_word_frequency_setter()
+        word_freq.gen_user_word_frequency_vector(user_processed_tweets_getter, wf_setter)
     elif wf_type == 5:
         click.echo("Computing relative user word frequency vector")
-        word_freq.gen_relative_user_word_frequency_vector(wf_getter, wf_setter)
+        global_wf_getter = dao_module.get_global_word_frequency_getter()
+        user_wf_getter = dao_module.get_user_word_frequency_getter()
+        user_rwf_setter = dao_module.get_user_relative_word_frequency_setter()
+        word_freq.gen_relative_user_word_frequency_vector(global_wf_getter, user_wf_getter, user_rwf_setter, user_processed_tweets_getter)
 
 def run_social_graph():
-    default_path = get_project_root() / 'src' / 'process' / 'social_graph' / 'social_graph_config.yaml'
-    social_graph_path = click.prompt("Path", default_path)
-    social_graph_config_parser = SocialGraphConfigParser(social_graph_path)
-    user_friends_getter = social_graph_config_parser.create_getter_DAOs()
-    social_graph_setter = social_graph_config_parser.create_setter_DAOs()
+    user_getter = dao_module.get_user_getter()
+    user_friends_getter = dao_module.get_user_friend_getter()
+    social_graph_setter = dao_module.get_social_graph_setter()
     social_graph = SocialGraph()
 
     click.echo("Social Graph options")
@@ -206,7 +215,7 @@ def run_social_graph():
         if use_user_list:
             ulp.run_function_by_user_list(social_graph.gen_user_friends_graph, user_or_user_list, user_friends_getter, social_graph_setter)
         else:
-            social_graph.gen_user_friends_graph(user_or_user_list, user_friends_getter, social_graph_setter)
+            social_graph.gen_user_friends_graph(user_or_user_list, user_getter, user_friends_getter, social_graph_setter)
     else:
         raise Exception("Invalid input")
 
@@ -223,19 +232,21 @@ def run_clustering():
         default_path = get_project_root() / 'src' / 'process' / 'clustering' / 'affinity_propagation' / 'ap_config.yaml'
         ap_config_path = click.prompt("Path", default_path)
         ap_config_parser = AffinityPropagationConfigParser(ap_config_path)
-        wf_getter = ap_config_parser.create_getter_DAOs()
+        user_rwf_getter = dao_module.get_user_relative_word_frequency_getter()
         ap_setter = ap_config_parser.create_setter_DAOs()
-        ap.gen_clusters(wf_getter, ap_setter)
+        ap.gen_clusters(user_rwf_getter, ap_setter)
     elif clustering_type == 2:
         click.echo("Computing Label Propagation cluster")
         default_path = get_project_root() / 'src' / 'process' / 'clustering' / 'label_propagation' / 'lp_config.yaml'
         lp_config_path = click.prompt("Path", default_path)
         lp_config_parser = LabelPropagationConfigParser(lp_config_path)
-        social_graph_getter = lp_config_parser.create_getter_DAOs()
         lp_cluster_setter = lp_config_parser.create_setter_DAOs()
+        social_graph_getter = dao_module.get_social_graph_getter()
+
         user = click.prompt("User")
         lab_prop = LabelPropagation()
-        lab_prop.gen_clusters(user, social_graph_getter, lp_cluster_setter)
+        user_id = dao_module.get_user_getter().get_user_by_screen_name(user).id
+        lab_prop.gen_clusters(user_id, social_graph_getter, lp_cluster_setter)
     elif clustering_type == 3:
         click.echo("MUISI Variants")
         click.echo("1. Tweets")
@@ -247,7 +258,6 @@ def run_clustering():
             default_path = get_project_root() / 'src' / 'process' / 'clustering' / 'muisi' / 'standard' / 'muisi_config.yaml'
             muisi_config_path = click.prompt("Path", default_path)
             muisi_config_parser = MUISIConfigParser(muisi_config_path, False)
-            wf_getter = muisi_config_parser.create_getter_DAOs()
             muisi_cluster_setter = muisi_config_parser.create_setter_DAOs()
             muisi = MUISI()
 
@@ -261,13 +271,15 @@ def run_clustering():
             is_only_popularity = click.confirm("Do you wish to only compute based on popularity?")
             muisi_config = MUISIConfig(intersection_min, popularity, threshold, user_count, item_count, count, is_only_popularity)
 
-            muisi.gen_clusters(muisi_config, wf_getter, muisi_cluster_setter)
+            user_wf_getter = dao_module.get_user_word_frequency_getter()
+            user_rwf_getter = dao_module.get_user_relative_word_frequency_getter()
+            muisi.gen_clusters(muisi_config, user_wf_getter, user_rwf_getter, muisi_cluster_setter)
         elif muisi_variant == 2:
             click.echo("Computing MUISI retweets cluster")
             default_path = get_project_root() / 'src' / 'process' / 'clustering' / 'muisi' / 'retweets' / 'muisi_retweets_config.yaml'
             muisi_config_path = click.prompt("Path", default_path)
             muisi_config_parser = MUISIConfigParser(muisi_config_path, True)
-            tweet_getter = muisi_config_parser.create_getter_DAOs()
+            tweet_getter = dao_module.get_raw_tweet_getter()
             muisi_cluster_setter = muisi_config_parser.create_setter_DAOs()
             muisi = MUISIRetweet()
 

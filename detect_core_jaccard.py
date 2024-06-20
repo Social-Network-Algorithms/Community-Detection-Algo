@@ -6,7 +6,7 @@ from src.shared.logger_factory import LoggerFactory
 
 log = LoggerFactory.logger(__name__)
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/detect_core_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 
 def detect_core(name: int, activity: str, path=DEFAULT_PATH):

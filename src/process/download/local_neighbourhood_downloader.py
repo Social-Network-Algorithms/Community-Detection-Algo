@@ -1,3 +1,9 @@
+from src.dao.retweeted_users.setter.retweet_users_setter import RetweetUsersSetter
+from src.dao.twitter.twitter_dao import TwitterGetter
+from src.dao.user.setter.user_setter import UserSetter
+from src.dao.user_friend.setter.friend_setter import FriendSetter
+from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
+from src.dao.user_tweets.setter.user_tweets_setter import UserTweetsSetter
 from src.process.download.user_downloader import TwitterUserDownloader
 from src.process.download.friend_downloader import FriendDownloader
 from src.dao.user.getter.user_getter import UserGetter
@@ -5,10 +11,6 @@ from src.dao.user_activity.getter.user_activity_getter import ActivityGetter
 from src.dao.user_friend.getter.friend_getter import FriendGetter
 from src.dao.local_neighbourhood.setter.local_neighbourhood_setter import LocalNeighbourhoodSetter
 from src.model.local_neighbourhood import LocalNeighbourhood
-from src.shared.utils import print_progress
-from typing import Dict
-import math
-from src.process.data_cleaning import extended_friends_cleaner
 
 from src.shared.logger_factory import LoggerFactory
 
@@ -16,19 +18,31 @@ log = LoggerFactory.logger(__name__)
 
 
 class LocalNeighbourhoodDownloader():
-    def __init__(self, user_downloader: TwitterUserDownloader,
+    def __init__(self, twitter_getter: TwitterGetter,
+                 user_downloader: TwitterUserDownloader,
                  user_friends_downloader: FriendDownloader,
                  user_getter: UserGetter,
+                 user_setter: UserSetter,
                  user_friend_getter: FriendGetter,
                  user_activity_getter: ActivityGetter,
+                 user_friend_setter: FriendSetter,
+                 user_tweets_getter: UserTweetsGetter,
+                 user_tweets_setter: UserTweetsSetter,
+                 retweeted_user_setter: RetweetUsersSetter,
                  cleaned_user_friend_getter: FriendGetter,
                  local_neighbourhood_setter: LocalNeighbourhoodSetter,
                  user_activity: str):
+        self.twitter_getter = twitter_getter
         self.user_downloader = user_downloader
         self.user_friends_downloader = user_friends_downloader
         self.user_friend_getter = user_friend_getter
         self.user_getter = user_getter
+        self.user_setter = user_setter
         self.user_activity_getter = user_activity_getter
+        self.user_friend_setter = user_friend_setter
+        self.user_tweets_getter = user_tweets_getter
+        self.user_tweets_setter = user_tweets_setter
+        self.retweeted_user_setter = retweeted_user_setter
         self.cleaned_user_friend_getter = cleaned_user_friend_getter
         self.local_neighbourhood_setter = local_neighbourhood_setter
         self.user_activity = user_activity
@@ -38,12 +52,22 @@ class LocalNeighbourhoodDownloader():
         # if user_friends_ids is None:
         #     log.info("Could not find user_friend list")
         #     self.user_friends_downloader.download_friends_ids_by_id(user_id)
-        
+
         # If using the JSON DAO, user_friends_ids will be users we retweeted
+
         user_friends_ids = self.user_friend_getter.get_user_friends_ids(
             user_id)
+        if user_friends_ids is None:
+            # Download and store user friends if missing
+            _, user_friends_ids_ = self.twitter_getter.get_friends_ids_by_user_id(user_id, None)
+            self.user_friend_setter.store_friends(user_id, user_friends_ids_)
+            user_friends_ids = self.user_friend_getter.get_user_friends_ids(
+                user_id)
+        assert user_friends_ids is not None
+
         log.info(f"Downloading local neighbourhood of {user_id}")
-        log.info(f"{ user_id} has {len(user_friends_ids)} friends")
+        log.info(f"{user_id} has {len(user_friends_ids)} friends")
+        t = None
         if clean:
             user_friends_ids, t = self.clean_user_friends_global(
                 user_id, user_friends_ids)
@@ -58,17 +82,34 @@ class LocalNeighbourhoodDownloader():
                  str(len(user_friends_ids)) + " users")
         for i in range(num_ids):
             id = user_friends_ids[i]
-
             user_activities = self.user_activity_getter.get_user_activities(id)
+
             if user_activities is None:
-                user_activities = []
+                # download user activities
+                if self.user_activity == 'friends':
+                    # download the friends of the friend
+                    _, friend_friend_ids = self.twitter_getter.get_friends_ids_by_user_id(id, None)
+                    self.user_friend_setter.store_friends(id, friend_friend_ids)
+                    user_activities = self.user_activity_getter.get_user_activities(id)
+
+                elif self.user_activity == "user retweets":
+                    # download the original user retweets of the friend
+                    all_tweets = self.user_tweets_getter.get_user_tweets(id)
+                    if all_tweets is None:
+                        # download all tweets for user if not available and store them
+                        self.user_tweets_setter.store_tweets(id, self.twitter_getter.get_tweets_by_user_id(id, 600))
+                        all_tweets = self.user_tweets_getter.get_user_tweets(id)
+
+                    retweeted_users = [tweet.retweet_user_id for tweet in all_tweets if tweet.retweet_user_id is not None]
+                    self.retweeted_user_setter.store_retweet_users(id, retweeted_users)
+                    user_activities = self.user_activity_getter.get_user_activities(id)
 
             assert user_activities is not None
 
             # Remove the check where id is in user_friends_ids ONLY FOR activity set friends because users have many friends
             if self.user_activity == 'friends':
                 user_dict[str(id)] = [str(id)
-                                    for id in user_activities if id in user_friends_ids]
+                                      for id in user_activities if id in user_friends_ids]
             else:
                 user_dict[str(id)] = [str(id)
                                       for id in user_activities]
@@ -93,15 +134,18 @@ class LocalNeighbourhoodDownloader():
     def clean_user_friends_global(self, user_id, friends_list):
         user = self.user_getter.get_user_by_id(str(user_id))
         log.info("Cleaning Friends List by Follower and Friend")
-        t = 0.1
+        t = 0.05
 
         num_users = len(friends_list)
         clean_friends_list = friends_list
-        while (num_users > 1000):
+        while num_users > 250:
             num_users = len(friends_list)
             clean_friends_list = []
             follower_thresh = t * user.followers_count
-            friend_thresh = t * user.friends_count
+            if user.friends_count < 0.2 * user.followers_count:
+                friend_thresh = t * user.friends_count
+            else:
+                friend_thresh = t * 0.2 * user.friends_count
             print(
                 f"Data cleaning with thresholds {follower_thresh, friend_thresh}")
             for id in friends_list:
@@ -112,5 +156,5 @@ class LocalNeighbourhoodDownloader():
                     num_users += 1
             log.info(
                 f"Increasing Data Cleaning Strength {t}, {num_users} remaining users")
-            t += 0.05
+            t += 0.025
         return clean_friends_list, t

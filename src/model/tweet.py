@@ -1,14 +1,17 @@
 from typing import Dict, Union, Optional
 import json
+from atproto_client.models import AppBskyFeedGetAuthorFeed, AppBskyFeedDefs, AppBskyEmbedRecord
+
 
 class Tweet:
     """
     A class to represent a tweet
     """
+
     def __init__(self, id: str, user_id: str, created_at: str, text: str,
-            lang: str, retweet_id: Optional[int],
-            retweet_user_id: Optional[int], quote_id: Optional[int],
-            quote_user_id: Optional[int]):
+                 lang: str, retweet_id: Optional[str],
+                 retweet_user_id: Optional[str], quote_id: Optional[str],
+                 quote_user_id: Optional[str]):
         """
         Default constructor for a tweet
 
@@ -70,8 +73,8 @@ class Tweet:
 
     def fromDict(dict: Dict):
         tweet = Tweet(dict["id"], dict["user_id"], dict["created_at"],
-            dict["text"], dict["lang"], dict["retweet_id"],
-            dict["retweet_user_id"], dict["quote_id"], dict["quote_user_id"])
+                      dict["text"], dict["lang"], dict["retweet_id"],
+                      dict["retweet_user_id"], dict["quote_id"], dict["quote_user_id"])
 
         return tweet
 
@@ -104,10 +107,76 @@ class Tweet:
             else None
 
         tweet = Tweet(id=id, user_id=user_id, created_at=created_at, text=text,
-            lang=lang, retweet_id=retweet_id, retweet_user_id=retweet_user_id,
-            quote_id=quote_id, quote_user_id=quote_user_id)
+                      lang=lang, retweet_id=retweet_id, retweet_user_id=retweet_user_id,
+                      quote_id=quote_id, quote_user_id=quote_user_id)
 
         return tweet
+
+    def getAttributesFromATproto(post: AppBskyFeedGetAuthorFeed.Response,
+                                 reason: Optional[AppBskyFeedDefs.ReasonRepost]):
+        id = post.uri
+        text = post.record.text
+        lang = post.record.langs[0] \
+            if post.record.langs is not None and len(post.record.langs) != 0 \
+            else None
+
+        if reason is not None:
+            # repost
+            # If the post is a repost, set the main and original user accordingly.
+            retweet_id = post.uri
+            retweet_user_id = post.author.did
+            user_id = reason.by.did
+            user_name = reason.by.handle
+            created_at = reason.indexed_at
+            quote_id, quote_user_id = None, None
+        elif post["embed"] is not None and isinstance(post.embed, AppBskyEmbedRecord.ViewRecord):
+            # quote
+            quote_id = post.embed.record.uri
+            quote_user_id = post.embed.record.author.did
+            user_id = post.author.did
+            user_name = post.author.handle
+            created_at = post.indexed_at
+            retweet_id, retweet_user_id = None, None
+
+        else:
+            # regular post
+            user_id = post.author.did
+            user_name = post.author.handle
+            created_at = post.indexed_at
+            retweet_id, retweet_user_id, quote_id, quote_user_id = None, None, None, None
+
+        return id, user_id, user_name, created_at, text, lang, retweet_id, retweet_user_id, quote_id, quote_user_id
+
+    def fromATprotoToObject(post: AppBskyFeedGetAuthorFeed.Response, reason: Optional[AppBskyFeedDefs.ReasonRepost]):
+        """
+        Given a AppBskyFeedGetAuthorFeed.Response object of a post returned by AT proto, returns the
+        tweet object
+
+        @return the Tweet object
+        """
+        id, user_id, user_name, created_at, text, lang, retweet_id, retweet_user_id, quote_id, quote_user_id = \
+            Tweet.getAttributesFromATproto(post, reason)
+
+        tweet = Tweet(id=id, user_id=user_id, created_at=created_at, text=text,
+                      lang=lang, retweet_id=retweet_id, retweet_user_id=retweet_user_id,
+                      quote_id=quote_id, quote_user_id=quote_user_id)
+
+        return tweet
+
+    def fromATprotoToJSON(post: AppBskyFeedGetAuthorFeed.Response, reason: Optional[AppBskyFeedDefs.ReasonRepost]):
+        """
+        Given a AppBskyFeedGetAuthorFeed.Response object of a post returned by AT proto, returns the
+        JSON object
+
+        @return the JSON object
+        """
+        id, user_id, user_name, created_at, text, lang, retweet_id, retweet_user_id, quote_id, quote_user_id = \
+            Tweet.getAttributesFromATproto(post, reason)
+
+        return {'id': id, 'user_id': user_id, 'user_name': user_name, 'created_at': created_at, 'text': text,
+                'lang': lang,
+                'retweet_id': retweet_id, 'retweet_user_id': retweet_user_id, 'quote_id': quote_id,
+                'quote_user_id': quote_user_id}
 
     def __eq__(self, other) -> bool:
         if isinstance(other, self.__class__):

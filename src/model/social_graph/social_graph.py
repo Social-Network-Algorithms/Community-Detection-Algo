@@ -17,7 +17,7 @@ class SocialGraph():
     def fromLocalNeighbourhood(local_neighbourhood: LocalNeighbourhood, params: Optional[Dict] = None, remove_unconnected_nodes=True):
         raise NotImplementedError("Subclasses should implement this")
 
-    def remove_unconnected_nodes(local_neighbourhood):
+    def remove_unconnected_nodes(local_neighbourhood: LocalNeighbourhood):
         count = 1
         user_dict = local_neighbourhood.users
         while count > 0:
@@ -49,7 +49,7 @@ class SocialGraph():
 
     def toBSON(self):
         doc = {
-            "seed_id": bson.int64.Int64(self.seed_id),
+            "seed_id": str(self.seed_id),
             "params": self.params,
             "adj_list": list(nx.generate_adjlist(self.graph))
         }

@@ -1,5 +1,6 @@
 from typing import Dict, Union, Optional
 import json
+from atproto_client.models import AppBskyActorDefs
 
 
 class User:
@@ -7,10 +8,10 @@ class User:
     A class that represents a twitter user
     """
 
-    def __init__(self, id: int, screen_name: str, name: str, created_at: str,
-            followers_count: int, friends_count: int, listed_count: int,
-            favourites_count: int, statuses_count: int, default_profile: bool,
-            default_profile_image: bool):
+    def __init__(self, id: str, screen_name: str, name: str, created_at: str,
+                 followers_count: int, friends_count: int, listed_count: int,
+                 favourites_count: int, statuses_count: int, default_profile: bool,
+                 default_profile_image: bool):
         """
         Constructor for a User object
 
@@ -69,10 +70,10 @@ class User:
         if dict is None:
             return None
         user = User(dict["id"], dict["screen_name"], dict["name"],
-            dict["created_at"], dict["followers_count"], dict["friends_count"],
-            dict["listed_count"], dict["favourites_count"],
-            dict["statuses_count"], dict["default_profile"],
-            dict["default_profile_image"])
+                    dict["created_at"], dict["followers_count"], dict["friends_count"],
+                    dict["listed_count"], dict["favourites_count"],
+                    dict["statuses_count"], dict["default_profile"],
+                    dict["default_profile_image"])
 
         return user
 
@@ -98,17 +99,47 @@ class User:
         default_profile_image = json_in.get("default_profile_image")
 
         user = User(id=id, name=name, screen_name=screen_name,
-            created_at=created_at, followers_count=followers_count,
-            friends_count=friends_count, listed_count=listed_count,
-            favourites_count=favourites_count, statuses_count=statuses_count,
-            default_profile=default_profile,
-            default_profile_image=default_profile_image)
+                    created_at=created_at, followers_count=followers_count,
+                    friends_count=friends_count, listed_count=listed_count,
+                    favourites_count=favourites_count, statuses_count=statuses_count,
+                    default_profile=default_profile,
+                    default_profile_image=default_profile_image)
+
+        return user
+
+    def fromATprotoObject(profile: AppBskyActorDefs.ProfileViewDetailed):
+        """
+        Given a ProfileViewDetailed representation of a user returned by AT proto, returns the
+        user object
+
+        @param json_in the json to convert to a User
+
+        @return the User object
+        """
+        id = profile.did
+        screen_name = profile.handle
+        name = profile.display_name
+        created_at = profile.indexed_at
+        followers_count = profile.followers_count
+        friends_count = profile.follows_count
+        listed_count = profile.associated.lists
+        favourites_count = 0
+        statuses_count = profile.posts_count
+        default_profile = False
+        default_profile_image = False
+
+        user = User(id=id, name=name, screen_name=screen_name,
+                    created_at=created_at, followers_count=followers_count,
+                    friends_count=friends_count, listed_count=listed_count,
+                    favourites_count=favourites_count, statuses_count=statuses_count,
+                    default_profile=default_profile,
+                    default_profile_image=default_profile_image)
 
         return user
 
     def toJSON(self) -> str:
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True,
-            indent=4)
+                          indent=4)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, self.__class__):

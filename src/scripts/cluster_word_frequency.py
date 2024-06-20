@@ -3,7 +3,7 @@ from src.shared.utils import get_project_root
 from src.dependencies.injector import Injector
 from typing import List
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/cluster_word_frequency_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 def get_cluster_word_frequency(ids: List[str], path=DEFAULT_PATH):
     injector = Injector.get_injector_from_file(path)

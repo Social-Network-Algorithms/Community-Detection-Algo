@@ -8,6 +8,8 @@ from src.dao.twitter.twitter_dao_factory import TwitterDAOFactory
 from src.dao.user.user_dao_factory import UserDAOFactory
 from src.dao.user_follower.user_follower_dao_factory import UserFollowerDAOFactory
 from src.dao.user_friend.user_friend_dao_factory import UserFriendDAOFactory
+from src.dao.user_processed_tweets.user_processed_tweets_dao_factory import UserProcessedTweetsDAOFactory
+from src.dao.user_tweets.user_tweets_dao_factory import UserTweetsDAOFactory
 from src.dao.user_word_frequency.user_word_frequency_dao_factory import UserWordFrequencyDAOFactory
 from src.dao.user_relative_word_frequency.user_relative_word_frequency_dao_factory import UserRelativeWordFrequencyDAOFactory
 from src.dao.cluster_word_frequency.cluster_word_frequency_dao_factory import ClusterWordFrequencyDAOFactory
@@ -109,9 +111,21 @@ class DAOModule():
         return RawTweetDAOFactory.create_getter(
             self.input_datastore["UserTweet"])
 
-    def get_user_tweet_setter(self):
-        return RawTweetDAOFactory.create_setter(
+    def get_user_tweets_getter(self):
+        return UserTweetsDAOFactory.create_getter(
+            self.input_datastore["UserTweet"])
+
+    def get_user_tweets_setter(self):
+        return UserTweetsDAOFactory.create_setter(
             self.output_datastore["UserTweet"])
+
+    def get_user_processed_tweets_getter(self):
+        return UserProcessedTweetsDAOFactory.create_getter(
+            self.input_datastore["UserProcessedTweet"])
+
+    def get_user_processed_tweets_setter(self):
+        return UserProcessedTweetsDAOFactory.create_setter(
+            self.output_datastore["UserProcessedTweet"])
 
     def get_social_graph_getter(self):
         return SocialGraphDAOFactory.create_getter(

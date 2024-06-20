@@ -1,4 +1,0 @@
-project1:
-  location: /var/lib/mongodb/temp
-  name: General
-  port: -1

@@ -11,7 +11,7 @@ import logging
 
 log = LoggerFactory.logger(__name__, logging.ERROR)
 
-DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/default_config.yaml"
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 def ranking(user_name: str, thresh, path=DEFAULT_PATH):
 
@@ -78,4 +78,4 @@ parser.add_argument('-t', '--thresh', dest='thresh', required=False,
                     default=DEFAULT_PATH, help='thresh', type=float)
 
 args = parser.parse_args()
-ranking(args.name, args.thresh)
+ranking(args.name, args.thresh, args.path)

@@ -9,13 +9,13 @@ class RawTweetGetter:
     datastore
     """
 
-    def get_tweet_by_id(self) -> List[Tweet]:
+    def get_tweet_by_id(self, id: str, user_id: str) -> Tweet:
         raise NotImplementedError("Subclasses should implement this")
 
     def get_tweets_by_user(self, user: User) -> Dict[str, List[Tweet]]:
         raise NotImplementedError("Subclasses should implement this")
 
-    def get_tweets_by_user_id(self, user, start_date, end_date, get_retweets=False):
+    def get_tweets_by_user_id(self, user_id: str):
         raise NotImplementedError("Subclasses should implement this")
 
     def get_num_tweets(self):
