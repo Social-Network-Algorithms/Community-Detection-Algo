@@ -5,7 +5,7 @@ from atproto_client.models import AppBskyActorDefs
 
 class User:
     """
-    A class that represents a twitter user
+    A class that represents a bluesky user
     """
 
     def __init__(self, id: str, screen_name: str, name: str, created_at: str,
@@ -15,12 +15,12 @@ class User:
         """
         Constructor for a User object
 
-        @param id the unique id of the twitter user
-        @param screen_name the screen name of the twitter user
-        @param name the name of the twitter user
-        @param created_at the date the twitter user was created
-        @param followers_count the number of followers of the twitter user
-        @param friends_count the number of friends of the twitter user
+        @param id the unique id of the bluesky user
+        @param screen_name the screen name of the bluesky user
+        @param name the name of the bluesky user
+        @param created_at the date the bluesky user was created
+        @param followers_count the number of followers of the bluesky user
+        @param friends_count the number of friends of the bluesky user
         @param listed_count the number of lists the user is a part of
         @param favourites_count the number of tweets this user has liked
         @param statuses_count the number of tweets the user has tweeted

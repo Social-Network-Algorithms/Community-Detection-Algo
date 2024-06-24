@@ -6,6 +6,9 @@ from pymongo import MongoClient
 from collections import Counter
 from copy import deepcopy, copy
 
+from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
+
+
 class MUISIRetweetConfig():
     def __init__(self, intersection_min, popularity, user_count):
         self.intersection_min = intersection_min
@@ -16,7 +19,7 @@ class MUISIRetweet():
     def __init__(self):
         self.data = MUISIRetweetData()
 
-    def gen_clusters(self, muisi_retweet_config, tweet_getter, muisi_retweet_cluster_setter):
+    def gen_clusters(self, muisi_retweet_config, tweet_getter: UserTweetsGetter, muisi_retweet_cluster_setter):
         # user_to_retweets = tweet_getter.get_user_tweets(get_retweets=True, lazy=False)
 
         user_to_retweets = tweet_getter.get_all_retweets_dict()

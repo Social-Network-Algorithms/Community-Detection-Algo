@@ -3,6 +3,8 @@ import sys
 
 import argparse
 import time
+
+from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
 from src.dependencies.injector import Injector
 from src.shared.utils import get_project_root
 from src.shared.logger_factory import LoggerFactory
@@ -22,9 +24,8 @@ DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_grap
 def process_dates(path=DEFAULT_PATH):
 
     injector = Injector.get_injector_from_file(path)
-    process_module = injector.get_process_module()
     dao_module = injector.get_dao_module()
-    user_tweet_getter = dao_module.get_user_tweet_getter()
+    user_tweet_getter: UserTweetsGetter = dao_module.get_user_tweets_getter()
     user_tweet_getter.convert_dates()
 
 if __name__ == "__main__":

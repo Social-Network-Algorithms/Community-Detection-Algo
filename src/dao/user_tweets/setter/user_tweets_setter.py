@@ -11,3 +11,6 @@ class UserTweetsSetter:
 
     def store_tweets(self, user_id: str, tweets: List[Tweet]):
         raise NotImplementedError("Subclasses should implement this")
+
+    def add_user_tweets(self, user_id: str, tweets: List[Tweet]):
+        raise NotImplementedError("Subclasses should implement this")

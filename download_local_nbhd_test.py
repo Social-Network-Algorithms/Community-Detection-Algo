@@ -29,7 +29,7 @@ def main(screen_name, user_activity: str):
     log.info(local_neighbourhood.__dict__)
     
 def get_user_by_screen_name(screen_name: str, path=DEFAULT_PATH) -> User:
-    """Returns a user object from their twitter screen name."""
+    """Returns a user object from their bluesky screen name."""
     injector = sdi.Injector.get_injector_from_file(path)
     dao_module = injector.get_dao_module()
     user_getter = dao_module.get_user_getter()

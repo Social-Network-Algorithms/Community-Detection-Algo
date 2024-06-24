@@ -20,9 +20,9 @@ class MongoUserGetter(UserGetter):
         else:
             injector = sdi.Injector.get_injector_from_file(DEFAULT_PATH)
             dao_module = injector.get_dao_module()
-            twitter_getter = dao_module.get_twitter_getter()
+            bluesky_getter = dao_module.get_bluesky_getter()
             user_setter = dao_module.get_user_setter()
-            user = twitter_getter.get_user_by_id(user_id)
+            user = bluesky_getter.get_user_by_id(user_id)
             if user is not None:
                 user_setter.store_user(user)
             return user

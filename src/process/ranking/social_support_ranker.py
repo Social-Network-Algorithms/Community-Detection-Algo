@@ -5,9 +5,9 @@ from typing import Dict, List
 from tqdm import tqdm
 
 class SocialSupportRanker(Ranker):
-    def __init__(self, twitter_getter, user_tweets_getter: UserTweetsGetter, user_tweets_setter: UserTweetsSetter,
+    def __init__(self, bluesky_getter, user_tweets_getter: UserTweetsGetter, user_tweets_setter: UserTweetsSetter,
                  user_getter, friends_getter, friends_setter, ranking_setter, alpha=1.0):
-        self.twitter_getter = twitter_getter
+        self.bluesky_getter = bluesky_getter
         self.friends_getter = friends_getter
         self.friends_setter = friends_setter
         self.user_tweets_getter = user_tweets_getter
@@ -22,7 +22,7 @@ class SocialSupportRanker(Ranker):
         for user_id in user_ids:
             friends_of_user_id = self.friends_getter.get_user_friends_ids(user_id)
             if friends_of_user_id is None:
-                _, friends_result = self.twitter_getter.get_friends_ids_by_user_id(user_id, None)
+                _, friends_result = self.bluesky_getter.get_friends_ids_by_user_id(user_id, None)
                 self.friends_setter.store_friends(user_id, friends_result)
                 friends_of_user_id = self.friends_getter.get_user_friends_ids(user_id)
 
@@ -37,7 +37,7 @@ class SocialSupportRanker(Ranker):
         for id in user_ids:
             user_tweets = self.user_tweets_getter.get_user_tweets(id)
             if user_tweets is None:
-                self.user_tweets_setter.store_tweets(id, self.twitter_getter.get_tweets_by_user_id(id, 600))
+                self.user_tweets_setter.store_tweets(id, self.bluesky_getter.get_tweets_by_user_id(id, 600))
                 user_tweets = self.user_tweets_getter.get_user_tweets(id)
 
             tweets += user_tweets

@@ -10,10 +10,10 @@ default_ul_path = get_project_root() / 'src' / 'tools' / 'user_list'
 def download_user_tweets(name: str, path=DEFAULT_PATH):
     injector = sdi.Injector.get_injector_from_file(path)
     dao_module = injector.get_dao_module()
-    twitter_getter = dao_module.get_twitter_getter()
+    bluesky_getter = dao_module.get_bluesky_getter()
 
-    user_id = twitter_getter.get_user_by_screen_name(name).id
-    twitter_getter.get_tweets_by_user_id(user_id, 500)
+    user_id = bluesky_getter.get_user_by_screen_name(name).id
+    bluesky_getter.get_tweets_by_user_id(user_id, 1000)
 
     ulp = UserListProcessor()
     user_or_user_list = ulp.user_list_parser(default_ul_path)

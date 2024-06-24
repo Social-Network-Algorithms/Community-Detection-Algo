@@ -6,9 +6,9 @@ from tqdm import tqdm
 
 
 class ProductionUtilityRanker(Ranker):
-    def __init__(self, twitter_getter, cluster_getter, user_tweets_getter: UserTweetsGetter,
+    def __init__(self, bluesky_getter, cluster_getter, user_tweets_getter: UserTweetsGetter,
                  user_tweets_setter: UserTweetsSetter, user_getter, ranking_setter):
-        self.twitter_getter = twitter_getter
+        self.bluesky_getter = bluesky_getter
         self.cluster_getter = cluster_getter
         self.user_tweets_getter = user_tweets_getter
         self.user_tweets_setter = user_tweets_setter
@@ -25,7 +25,7 @@ class ProductionUtilityRanker(Ranker):
 
             user_tweets = self.user_tweets_getter.get_user_tweets(id)
             if user_tweets is None:
-                self.user_tweets_setter.store_tweets(id, self.twitter_getter.get_tweets_by_user_id(id, 600))
+                self.user_tweets_setter.store_tweets(id, self.bluesky_getter.get_tweets_by_user_id(id, 600))
                 user_tweets = self.user_tweets_getter.get_user_tweets(id)
             tweets += user_tweets
 

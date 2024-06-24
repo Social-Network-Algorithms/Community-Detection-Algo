@@ -195,7 +195,7 @@ def refine_social_graph_jaccard_users(screen_name: str, social_graph: SocialGrap
     log.info("Refining by Jaccard Similarity:")
 
     MIN_RETWEETS = 3  # TODO: decide
-    MAX_USERS_RETWEETED = 300 # TODO: decide
+    MAX_USERS_RETWEETED = 200 # TODO: decide
 
     users_map = {}
     weights_map = {}
@@ -314,7 +314,7 @@ def clustering_from_social_graph(screen_name: str, social_graph: SocialGraph, pa
 
 
 def get_user_by_screen_name(screen_name: str, path=DEFAULT_PATH) -> User:
-    """Returns a user object from their twitter screen name."""
+    """Returns a user object from their bluesky screen name."""
     injector = sdi.Injector.get_injector_from_file(path)
     dao_module = injector.get_dao_module()
     user_getter = dao_module.get_user_getter()

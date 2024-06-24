@@ -484,9 +484,8 @@ def clustering_from_social_graph(screen_name: str, user_activity: str, iter: Opt
         #all_nodes = clusters_to_forest(0.3, 0.60, 0.05, screen_name)
         #main_roots = get_main_roots(all_nodes)
         # We set lower thresholds for non-friend activities
-        # TODO: decide on start and end threshold and increment
-        # main_roots = dividing_social_graph(0.0001, 0.001, 0.0003, screen_name, user_activity=user_activity)
-        main_roots = dividing_social_graph(0.0005, 0.005, 0.0015, screen_name, user_activity=user_activity)
+        main_roots = dividing_social_graph(0.0001, 0.001, 0.0003, screen_name, user_activity=user_activity)
+        # main_roots = dividing_social_graph(0.0005, 0.005, 0.0015, screen_name, user_activity=user_activity)
         # main_roots = dividing_social_graph(0.005, 0.01, 0.001, screen_name, user_activity=user_activity)
         # main_roots = dividing_social_graph(0.03, 0.6, 0.05, screen_name, user_activity="friends")
         # visualize_forest1(screen_name, main_roots, iter)

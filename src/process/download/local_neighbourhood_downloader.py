@@ -1,10 +1,10 @@
 from src.dao.retweeted_users.setter.retweet_users_setter import RetweetUsersSetter
-from src.dao.twitter.twitter_dao import TwitterGetter
+from src.dao.bluesky.bluesky_dao import BlueSkyGetter
 from src.dao.user.setter.user_setter import UserSetter
 from src.dao.user_friend.setter.friend_setter import FriendSetter
 from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
 from src.dao.user_tweets.setter.user_tweets_setter import UserTweetsSetter
-from src.process.download.user_downloader import TwitterUserDownloader
+from src.process.download.user_downloader import BlueskyUserDownloader
 from src.process.download.friend_downloader import FriendDownloader
 from src.dao.user.getter.user_getter import UserGetter
 from src.dao.user_activity.getter.user_activity_getter import ActivityGetter
@@ -18,8 +18,8 @@ log = LoggerFactory.logger(__name__)
 
 
 class LocalNeighbourhoodDownloader():
-    def __init__(self, twitter_getter: TwitterGetter,
-                 user_downloader: TwitterUserDownloader,
+    def __init__(self, bluesky_getter: BlueSkyGetter,
+                 user_downloader: BlueskyUserDownloader,
                  user_friends_downloader: FriendDownloader,
                  user_getter: UserGetter,
                  user_setter: UserSetter,
@@ -32,7 +32,7 @@ class LocalNeighbourhoodDownloader():
                  cleaned_user_friend_getter: FriendGetter,
                  local_neighbourhood_setter: LocalNeighbourhoodSetter,
                  user_activity: str):
-        self.twitter_getter = twitter_getter
+        self.bluesky_getter = bluesky_getter
         self.user_downloader = user_downloader
         self.user_friends_downloader = user_friends_downloader
         self.user_friend_getter = user_friend_getter
@@ -48,18 +48,11 @@ class LocalNeighbourhoodDownloader():
         self.user_activity = user_activity
 
     def download_local_neighbourhood_by_id(self, user_id: str, params=None, clean=True):
-        # user_friends_ids = self.cleaned_user_friend_getter.get_user_friends_ids(user_id)
-        # if user_friends_ids is None:
-        #     log.info("Could not find user_friend list")
-        #     self.user_friends_downloader.download_friends_ids_by_id(user_id)
-
-        # If using the JSON DAO, user_friends_ids will be users we retweeted
-
         user_friends_ids = self.user_friend_getter.get_user_friends_ids(
             user_id)
         if user_friends_ids is None:
             # Download and store user friends if missing
-            _, user_friends_ids_ = self.twitter_getter.get_friends_ids_by_user_id(user_id, None)
+            _, user_friends_ids_ = self.bluesky_getter.get_friends_ids_by_user_id(user_id, None)
             self.user_friend_setter.store_friends(user_id, user_friends_ids_)
             user_friends_ids = self.user_friend_getter.get_user_friends_ids(
                 user_id)
@@ -88,7 +81,7 @@ class LocalNeighbourhoodDownloader():
                 # download user activities
                 if self.user_activity == 'friends':
                     # download the friends of the friend
-                    _, friend_friend_ids = self.twitter_getter.get_friends_ids_by_user_id(id, None)
+                    _, friend_friend_ids = self.bluesky_getter.get_friends_ids_by_user_id(id, None)
                     self.user_friend_setter.store_friends(id, friend_friend_ids)
                     user_activities = self.user_activity_getter.get_user_activities(id)
 
@@ -96,8 +89,8 @@ class LocalNeighbourhoodDownloader():
                     # download the original user retweets of the friend
                     all_tweets = self.user_tweets_getter.get_user_tweets(id)
                     if all_tweets is None:
-                        # download all tweets for user if not available and store them
-                        self.user_tweets_setter.store_tweets(id, self.twitter_getter.get_tweets_by_user_id(id, 600))
+                        # download tweets for user if not available and store them
+                        self.user_tweets_setter.store_tweets(id, self.bluesky_getter.get_tweets_by_user_id(id, 600))
                         all_tweets = self.user_tweets_getter.get_user_tweets(id)
 
                     retweeted_users = [tweet.retweet_user_id for tweet in all_tweets if tweet.retweet_user_id is not None]

@@ -1,14 +1,9 @@
+from src.model.tweet import Tweet
 from src.model.user import User
 from typing import Dict, List, Tuple
 
 
-class TwitterGetter():
-    def stream_tweets(self, num_tweets, subscriber) -> None:
-        raise NotImplementedError("Subclasses should implement this")
-
-    def buffered_stream_tweets(self, num_tweets, subscriber) -> None:
-        raise NotImplementedError("Subclasses should implement this")
-
+class BlueSkyGetter():
     def get_tweets_by_user_id(self, user_id: str, num_tweets=0, start_date=None, end_date=None):
         raise NotImplementedError("Subclasses should implement this")
 
@@ -53,6 +48,6 @@ class TwitterGetter():
         user = self.get_user_by_screen_name(screen_name)
         return self.get_followers_users_by_user_id(user.id, num_followers=num_followers)
 
-    def get_random_tweet(self):
+    def get_random_tweet(self) -> Tweet:
         raise NotImplementedError("Subclasses should implement this")
 

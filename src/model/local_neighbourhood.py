@@ -5,7 +5,7 @@ import random
 
 class LocalNeighbourhood():
     """
-    A class which represents a twitter local local neighbourhood
+    A class which represents a bluesky local local neighbourhood
     """
 
     def __init__(self, seed_id: str, params, users: Dict, user_activity: str="unknown"):

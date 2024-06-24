@@ -270,9 +270,8 @@ class JaccardCoreDetector():
 
         for cluster in clusters:
             # social support
-            # sosu_ranker_scores = self.sosu_ranker.score_users(cluster.users)
-            # sosu_ranking = list(sorted(sosu_ranker_scores, key=lambda x: (sosu_ranker_scores[x][0], sosu_ranker_scores[x][1]), reverse=True))
-            # cluster_scores[cluster] = sum([sosu_ranker_scores[str(user_id)][0] for user_id in sosu_ranking])
+            sosu_ranker_scores = self.sosu_ranker.score_users(cluster.users)
+            sosu_ranking = list(sorted(sosu_ranker_scores, key=lambda x: (sosu_ranker_scores[x][0], sosu_ranker_scores[x][1]), reverse=True))
 
             # production
             # prod_ranker_scores, _, _ = get_simple_prod_ranking(screen_name, cluster)
@@ -290,8 +289,8 @@ class JaccardCoreDetector():
             # cluster_scores[cluster] = sum([local_followers_scores[str(user_id)]for user_id in local_followers_ranking])
 
             # social support + influence 1
-            sosu, infl1, intersection_ranking = get_new_intersection_ranking(screen_name, cluster)
-            cluster_scores[cluster] = sum([sosu[str(user_id)][0] for user_id in intersection_ranking])
+            # sosu, infl1, intersection_ranking = get_new_intersection_ranking(screen_name, cluster)
+            # cluster_scores[cluster] = sum([sosu[str(user_id)][0] for user_id in intersection_ranking])
 
             # production + influence 1
             # prod, infl1, intersection_ranking = get_simple_prod_ranking(screen_name, cluster)
@@ -306,8 +305,8 @@ class JaccardCoreDetector():
             # cluster_scores[cluster] = sum([local_followers[str(user_id)] for user_id in intersection_ranking])
 
             for i, user_id in enumerate(top_10_users_ids):
-                if user_id in intersection_ranking:
-                    distance = abs(i - intersection_ranking.index(user_id))
+                if user_id in sosu_ranking:
+                    distance = abs(i - sosu_ranking.index(user_id))
                     weight = 1 / (i + 1) # higher ranked users are more important
                     cluster_scores[cluster] += weight / (distance + 1)
 

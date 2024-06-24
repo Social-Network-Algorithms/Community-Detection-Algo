@@ -1,3 +1,5 @@
+from time import sleep
+
 from atproto_client import SessionEvent, Session
 from atproto_firehose import FirehoseSubscribeLabelsClient, parse_subscribe_labels_message
 
@@ -5,8 +7,7 @@ import conf.credentials as credentials
 from typing import Union, List, Dict, Tuple, Optional
 from src.model.tweet import Tweet
 from src.model.user import User
-from src.dao.twitter.twitter_dao import TwitterGetter
-from tweepy import TweepError
+from src.dao.bluesky.bluesky_dao import BlueSkyGetter
 from src.shared.logger_factory import LoggerFactory
 import threading
 from atproto import Client
@@ -14,144 +15,6 @@ from atproto import Client
 log = LoggerFactory.logger(__name__)
 
 apiThreadLock = threading.Lock()
-
-
-# class BufferedUserTweetGetter():
-#     def __init__(self, num_tweets, subscriber, twitter_api, user_ids, q=Queue(), r=Queue()):
-#         self.twitter_api = twitter_api
-#
-#         num_threads = 4
-#         self.q = q
-#         self.r = r
-#
-#         self.limit = num_tweets
-#         self.subscriber = subscriber
-#
-#         for user_id in user_ids:
-#             self.q.put(user_id)
-#
-#         api_threads = []
-#         worker_threads = []
-#
-#         # Api threads
-#         self.api_threads_running = num_threads
-#         for i in range(num_threads):
-#             t = Thread(target=self.stream_tweets)
-#             t.daemon = True
-#             api_threads.append(t)
-#             t.start()
-#
-#         # Worker threads
-#         for i in range(num_threads):
-#             t = Thread(target=self.do_work)
-#             t.daemon = True
-#             worker_threads.append(t)
-#             t.start()
-#
-#         self.api_threads = api_threads
-#         self.worker_threads = worker_threads
-#
-#     def stream_tweets(self):
-#         while not self.q.empty():
-#             try:
-#                 user_id = self.q.get(block=True, timeout=5)
-#
-#                 counter = 0
-#                 try:
-#                     cursor = Cursor(self.twitter_api.user_timeline, user_id=user_id, count=200,
-#                                     since_id='1277627227954458624', exclude_replies=True).items()
-#                     for data in cursor:
-#                         self.r.put(data)
-#                         counter += 1
-#                 except TweepError as e:
-#                     log.error(e)
-#
-#                 log.info("Downloaded " + str(counter) + " Tweets for user " + str(user_id))
-#             except Exception as ex:
-#                 # Exception is empty queue exception
-#                 pass
-#
-#         with apiThreadLock:
-#             self.api_threads_running -= 1
-#
-#     def do_work(self):
-#         while self.api_threads_running != 0 or not self.r.empty():
-#             try:
-#                 data = self.r.get(block=True, timeout=5)
-#                 self.subscriber.on_status(data)
-#             except Exception as ex:
-#                 # Exception is empty queue exception
-#                 pass
-#
-
-# class BufferedTweepyListener(StreamListener):
-#     def __init__(self, num_tweets, subscriber, q=Queue()):
-#         super().__init__()
-#
-#         self.running = True
-#
-#         num_threads = 4
-#         self.q = q
-#
-#         threads = []
-#         for i in range(num_threads):
-#             t = Thread(target=self.do_work)
-#             t.daemon = True
-#             threads.append(t)
-#             t.start()
-#
-#         self.counter = 0
-#         self.limit = num_tweets
-#
-#         self.threads = threads
-#
-#         self.subscriber = subscriber
-#
-#     def on_status(self, data):
-#         self.q.put(data)
-#         self.counter += 1
-#
-#         if self.counter < self.limit:
-#             return True
-#         else:
-#             self.running = False
-#             return False
-#
-#     def get_data(self):
-#         while self.running or not self.q.empty():
-#             try:
-#                 data = self.q.get(block=True, timeout=5)
-#                 if data is not None:
-#                     self.subscriber.on_status(data)
-#             except Exception as ex:
-#                 # Exception is empty exception
-#                 pass
-#
-#     def do_work(self):
-#         while self.running or not self.q.empty():
-#             try:
-#                 data = self.q.get(block=True, timeout=5)
-#                 if data is not None:
-#                     self.subscriber.on_status(data)
-#             except Exception as ex:
-#                 # Exception is empty exception
-#                 pass
-
-
-# class TweepyListener(StreamListener):
-#     def __init__(self, num_tweets, subscriber):
-#         super().__init__()
-#
-#         self.counter = 0
-#         self.limit = num_tweets
-#
-#         self.subscriber = subscriber
-#
-#     def on_status(self, data):
-#         self.subscriber.on_status(data)
-#         self.counter += 1
-#
-#         return self.counter < self.limit
 
 
 class BlueSkyAuthenticator():
@@ -163,7 +26,11 @@ class BlueSkyAuthenticator():
         session_string = self.get_session()
         if session_string:
             # print('Reusing session')
-            self.client.login(session_string=session_string)
+            try:
+                self.client.login(session_string=session_string)
+            except Exception as e:
+                sleep(60)
+                self.client.login(session_string=session_string)
         else:
             # print('Creating new session')
             self.client.login(credentials.USER_NAME, credentials.PASSWORD)
@@ -185,51 +52,9 @@ class BlueSkyAuthenticator():
             self.save_session(session.export())
 
 
-class TweepyTwitterGetter(TwitterGetter):
+class TweepyBlueSkyGetter(BlueSkyGetter):
     def __init__(self):
         self.client = BlueSkyAuthenticator().login()
-
-    # def stream_tweets_by_user_id_list(self, user_ids, subscriber, num_tweets=0):
-    #     getter = BufferedUserTweetGetter(num_tweets=num_tweets, subscriber=subscriber, user_ids=user_ids, twitter_api=self.twitter_api)
-    #
-    #     api_threads = getter.api_threads
-    #     for t in api_threads:
-    #         t.join()
-    #
-    #     log.info("All API threads joined, waiting for worker threads to store tweets")
-    #
-    #     worker_threads = getter.worker_threads
-    #     for t in worker_threads:
-    #         t.join()
-    #
-    #     log.info("Done streaming tweets")
-
-    # def buffered_stream_tweets(self, num_tweets, subscriber) -> None:
-    #     # Subscriber is what stores the tweets
-    #     listener = BufferedTweepyListener(num_tweets=num_tweets, subscriber=subscriber)
-    #
-    #     stream = Stream(self.auth, listener)
-    #     stream.filter(languages=["en"])
-    #     stream.sample()
-    #
-    #     threads = listener.threads
-    #     for t in threads:
-    #         t.join()
-
-    # def stream_tweets(self, num_tweets, subscriber) -> None:
-    #     """
-    #     Creates a twitter stream, which downloads the given number of tweets.
-    #     Each time a tweet is downloaded, the subscriber is notified (their
-    #     on_status method is called)
-    #
-    #     @param num_tweets the number of tweets to download
-    #     @param subscriber the object to notify each time a tweet is downloaded
-    #     """
-    #     listener = TweepyListener(num_tweets=num_tweets, subscriber=subscriber)
-    #
-    #     stream = Stream(self.auth, listener)
-    #     stream.filter(languages=["en"])
-    #     stream.sample()
 
     def get_user_by_id(self, user_id: str) -> User:
         params = {'actor': user_id}
@@ -289,7 +114,6 @@ class TweepyTwitterGetter(TwitterGetter):
         return list(filter(pred, tweets)) if start_date and end_date else list(tweets)
 
     def get_friends_ids_by_user_id(self, user_id: str, num_friends=0) -> Tuple[str, List[str]]:
-        # cursor = Cursor(self.twitter_api.friends_ids, user_id=user_id, count=5000).items(limit=num_friends)
         friends_user_ids = []
         params = {'actor': user_id, 'cursor': '', 'limit': 100}
         has_more = True
@@ -400,7 +224,7 @@ class TweepyTwitterGetter(TwitterGetter):
 
         return user_id, followers_users
 
-    def get_random_tweet(self):
+    def get_random_tweet(self) -> Tweet:
         stream_client = FirehoseSubscribeLabelsClient()
         random_tweets_ids = []
 

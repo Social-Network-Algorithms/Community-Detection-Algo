@@ -5,8 +5,8 @@ from typing import List
 
 
 class RelativeProductionRanker(Ranker):
-    def __init__(self, twitter_getter, cluster_getter, user_tweets_getter: UserTweetsGetter, ranking_setter, user_getter):
-        self.twitter_getter = twitter_getter
+    def __init__(self, bluesky_getter, cluster_getter, user_tweets_getter: UserTweetsGetter, ranking_setter, user_getter):
+        self.bluesky_getter = bluesky_getter
         self.cluster_getter = cluster_getter
         self.user_tweets_getter = user_tweets_getter
         self.ranking_setter = ranking_setter

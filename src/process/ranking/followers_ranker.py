@@ -3,8 +3,8 @@ from typing import List
 
 
 class FollowerRanker(Ranker):
-    def __init__(self, twitter_getter, cluster_getter, user_getter, ranking_setter):
-        self.twitter_getter = twitter_getter
+    def __init__(self, bluesky_getter, cluster_getter, user_getter, ranking_setter):
+        self.bluesky_getter = bluesky_getter
         self.cluster_getter = cluster_getter
         self.user_getter = user_getter
         self.ranking_setter = ranking_setter

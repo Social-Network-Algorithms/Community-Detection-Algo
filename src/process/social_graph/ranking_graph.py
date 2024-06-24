@@ -3,7 +3,7 @@ from src.scripts.cluster_ranking_experiments import jaccard_similarity
 
 class RankingGraph():
     """
-    Creates a graph of twitter friends representing a community
+    Creates a graph of bluesky friends representing a community
     """
 
     def gen_user_friends_graph(self, users, local_friends):

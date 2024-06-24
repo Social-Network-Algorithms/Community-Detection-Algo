@@ -16,7 +16,7 @@ def determine_connectedness():
         user_tweets_getter = dao_module.get_user_tweets_getter()
         user_friend_getter = dao_module.get_user_friend_getter()
 
-        given_list = ['leohickman.bsky.social', 'carbonbrief.org', 'drsimevans.bsky.social', 'joshgabbatiss.bsky.social', 'anikanpatel.bsky.social', 'daisydunne.bsky.social', 'mollylempriere.bsky.social', 'davidrvetter.bsky.social', 'matthannon.bsky.social', 'patrickgaley.bsky.social', 'neilgrant.bsky.social']
+        given_list =  ['jasondashbailey.bsky.social', 'aduralde.bsky.social', 'isaacbutler.bsky.social', 'jonathancohn.bsky.social', 'daveweigel.bsky.social', 'alishagrauso.bsky.social', 'helenkennedy.bsky.social', 'jamiroqueer.bsky.social', 'colson.bsky.social', 'schooley.bsky.social', 'mousterpiece.bsky.social']
 
         given_list_ids = []
 

@@ -2,11 +2,9 @@ from typing import Union, List
 
 from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
 from src.dao.user_tweets.setter.user_tweets_setter import UserTweetsSetter
-from src.model.tweet import Tweet
 from src.model.user import User
-from src.dao.twitter.twitter_dao import TwitterGetter
+from src.dao.bluesky.bluesky_dao import BlueSkyGetter
 from src.dao.user.getter.user_getter import UserGetter
-from src.dao.raw_tweet.setter.raw_tweet_setter import RawTweetSetter
 from src.shared.logger_factory import LoggerFactory
 from typing import Optional
 from datetime import date
@@ -21,9 +19,9 @@ class UserTweetDownloader():
     Downloads tweets for a particular user
     """
 
-    def __init__(self, twitter_getter: TwitterGetter, user_tweets_getter: UserTweetsGetter, user_tweets_setter: UserTweetsSetter,
+    def __init__(self, bluesky_getter: BlueSkyGetter, user_tweets_getter: UserTweetsGetter, user_tweets_setter: UserTweetsSetter,
                  user_getter: Optional[UserGetter] = None):
-        self.twitter_getter = twitter_getter
+        self.bluesky_getter = bluesky_getter
         self.user_tweets_getter = user_tweets_getter
         self.user_tweets_setter = user_tweets_setter
         self.user_getter = user_getter
@@ -37,7 +35,7 @@ class UserTweetDownloader():
         to get a new past date as our start date for downloading tweets. Any older tweets are ignored.
         """
         user_id = self.user_getter.get_user_by_screen_name(screen_name).id
-        all_tweets = self.twitter_getter.get_tweets_by_user_id(user_id)
+        all_tweets = self.bluesky_getter.get_tweets_by_user_id(user_id)
         tweets = []
         startDate = date.today() + relativedelta(months=-months_back)
         for tweet in all_tweets:
@@ -53,7 +51,7 @@ class UserTweetDownloader():
         @param months_back: the number of months we are going to count back from the current date,
         to get a new past date as our start date for downloading tweets. Any older tweets are ignored.
         """
-        all_tweets = self.twitter_getter.get_tweets_by_user_id(user_id)
+        all_tweets = self.bluesky_getter.get_tweets_by_user_id(user_id)
         tweets = []
         startDate = date.today() + relativedelta(months=-months_back)
 
@@ -99,5 +97,5 @@ class UserTweetDownloader():
         log.info("Starting Download")
 
         for user_id in modified_list:
-            tweets = self.twitter_getter.get_tweets_by_user_id(user_id, 500)
+            tweets = self.bluesky_getter.get_tweets_by_user_id(user_id, 600)
             self.user_tweets_setter.store_tweets(user_id, tweets)

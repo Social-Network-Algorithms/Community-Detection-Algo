@@ -19,5 +19,15 @@ class MongoUserTweetsSetter(UserTweetsSetter):
         else:
             self.user_tweets_collection.insert_one(doc)
 
+    def add_user_tweets(self, user_id: str, tweets: List[Tweet]):
+        doc = {"user_id": str(user_id), "tweets": list(map(lambda tweet: tweet.__dict__, tweets))}
+        existing_doc = self.user_tweets_collection.find_one({"user_id": str(user_id)})
+
+        if existing_doc is not None:
+            doc["tweets"] += existing_doc["tweets"]
+            self.user_tweets_collection.find_one_and_replace({"user_id": str(user_id)}, doc)
+        else:
+            self.user_tweets_collection.insert_one(doc)
+
     def contains_user(self, user_id: str) -> bool:
         return self.user_tweets_collection.find_one({"user_id": str(user_id)}) is not None

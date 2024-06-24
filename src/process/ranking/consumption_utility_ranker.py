@@ -1,4 +1,4 @@
-from src.dao.twitter.twitter_dao import TwitterGetter
+from src.dao.bluesky.bluesky_dao import BlueSkyGetter
 from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
 from src.dao.user_tweets.setter.user_tweets_setter import UserTweetsSetter
 from src.process.ranking.ranker import Ranker
@@ -7,9 +7,9 @@ from tqdm import tqdm
 
 
 class ConsumptionUtilityRanker(Ranker):
-    def __init__(self, twitter_getter: TwitterGetter, cluster_getter, user_tweets_getter: UserTweetsGetter,
+    def __init__(self, bluesky_getter: BlueSkyGetter, cluster_getter, user_tweets_getter: UserTweetsGetter,
                  user_tweets_setter: UserTweetsSetter, user_getter, ranking_setter):
-        self.twitter_getter = twitter_getter
+        self.bluesky_getter = bluesky_getter
         self.cluster_getter = cluster_getter
         self.user_tweets_getter = user_tweets_getter
         self.user_tweets_setter = user_tweets_setter
@@ -24,7 +24,7 @@ class ConsumptionUtilityRanker(Ranker):
             scores[id][1] = user.friends_count
             user_tweets = self.user_tweets_getter.get_user_tweets(id)
             if user_tweets is None:
-                self.user_tweets_setter.store_tweets(id, self.twitter_getter.get_tweets_by_user_id(id, 600))
+                self.user_tweets_setter.store_tweets(id, self.bluesky_getter.get_tweets_by_user_id(id, 600))
                 user_tweets = self.user_tweets_getter.get_user_tweets(id)
 
             for tweet in user_tweets:

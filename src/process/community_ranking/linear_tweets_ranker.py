@@ -1,11 +1,12 @@
+from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
 from src.process.community_ranking.community_ranker import CommunityRanker
 from typing import List
 from tqdm import tqdm
 
 
 class LinearCommunityRanker(CommunityRanker):
-    def __init__(self, raw_tweet_getter):
-        self.raw_tweet_getter = raw_tweet_getter
+    def __init__(self, user_tweets_getter: UserTweetsGetter):
+        self.user_tweets_getter = user_tweets_getter
         self.ranking_function_name = "retweets"
 
     def score_users(self, users: List, current_community: List, gamma=3):
@@ -22,7 +23,7 @@ class LinearCommunityRanker(CommunityRanker):
             consumption_scores[id] = 0
 
         for id in tqdm(users):
-            retweets = self.raw_tweet_getter.get_retweets_of_user_by_user_id(id)
+            retweets = self.user_tweets_getter.get_user_retweets(id)
             if len(retweets) < 1:
                 production_scores[id] = 0
                 continue
@@ -32,7 +33,7 @@ class LinearCommunityRanker(CommunityRanker):
                         production_scores[id] += 1
 
         for id in tqdm(users):
-            retweets = self.raw_tweet_getter.get_retweets_by_user_id_time_restricted(id)
+            retweets = self.user_tweets_getter.get_retweets_by_user_id_time_restricted(id)
             for retweet in retweets:
                 if str(retweet.retweet_user_id) in current_community or int(
                         retweet.retweet_user_id) in current_community:

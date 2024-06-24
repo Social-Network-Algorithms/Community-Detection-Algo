@@ -8,7 +8,7 @@ from src.dao.local_neighbourhood.getter.local_neighbourhood_getter import LocalN
 
 class SocialGraphConstructor():
     """
-    Creates a graph of twitter friends representing a community
+    Creates a graph of bluesky friends representing a community
     """
 
     def __init__(self, local_neighbourhood_getter: LocalNeighbourhoodGetter, social_graph_setter: SocialGraphSetter):

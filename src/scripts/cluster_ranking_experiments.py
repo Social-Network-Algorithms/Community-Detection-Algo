@@ -34,7 +34,7 @@ def ranking_distribution(user_name: str, thresh, path=DEFAULT_PATH):
 
     user_getter = dao_module.get_user_getter()
     friends_getter = dao_module.get_user_friend_getter()
-    tweet_getter = dao_module.get_user_tweet_getter()
+    tweet_getter = dao_module.get_user_tweets_getter()
     clusterer = process_module.get_clusterer()
 
     seed_id = user_getter.get_user_by_screen_name(user_name).id
