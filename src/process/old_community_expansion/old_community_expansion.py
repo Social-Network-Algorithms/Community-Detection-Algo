@@ -1,7 +1,6 @@
 from matplotlib import pyplot as plt
 
 from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
-from src.process.community_ranking.community_influence_one_ranker import CommunityInfluenceOneRanker
 from src.process.community_ranking.community_social_support_ranker import CommunitySocialSupportRanker
 from src.shared.utils import get_project_root
 from src.shared.logger_factory import LoggerFactory
@@ -12,11 +11,11 @@ DEFAULT_PATH = str(
     get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 
-class CommunityExpansionAlgorithm:
+class OldCommunityExpansionAlgorithm:
     def __init__(self, user_getter, user_downloader,
                  user_tweets_getter: UserTweetsGetter, user_tweet_downloader,
                  user_friend_getter, user_friends_downloader,
-                 ranker_list, intersection_ranker, dataset_creator, community_of_interest, community_of_interest_score):
+                 ranker_list, intersection_ranker, dataset_creator):
         self.user_getter = user_getter
         self.user_downloader = user_downloader
         self.user_tweets_getter = user_tweets_getter
@@ -26,12 +25,8 @@ class CommunityExpansionAlgorithm:
         self.ranker_list = ranker_list
         self.intersection_ranker = intersection_ranker
         self.dataset_creator = dataset_creator
-        self.community_of_interest = community_of_interest
-        self.community_of_interest_score = community_of_interest_score
         self.community_social_support_ranker = CommunitySocialSupportRanker(user_tweets_getter, user_friend_getter,
                                                                             None)
-        self.community_influence1_ranker = CommunityInfluenceOneRanker(user_tweets_getter, user_friend_getter,
-                                                                       None)
 
     def download_friends(self, curr_candidates):
         for curr_candidate in curr_candidates:
@@ -51,7 +46,7 @@ class CommunityExpansionAlgorithm:
                     self.user_downloader.download_user_by_id(curr_candidate)
                     user_info = self.user_getter.get_user_by_id(curr_candidate)
                     user_id = user_info.id
-                except Exception:
+                except:
                     log.info("[Download Error] Cannot download user " + str(curr_candidate))
             else:
                 user_id = user_info.id
@@ -118,6 +113,7 @@ class CommunityExpansionAlgorithm:
                                  community, respection, candidates, mode):
         """
         threshold: candidate must have utility more than <threshold>% of
+
             average utility of top <top_size> users.
         top_size: Top <top_size> users are used for measurement
         candidates_size: Only keep <candidates_size> user
@@ -153,10 +149,7 @@ class CommunityExpansionAlgorithm:
             log.info("Top " + str(top_size) + " users average " +
                      self.ranker_list[i].ranking_function_name + " is " +
                      str(thresholds[i]))
-            if self.ranker_list[i].ranking_function_name == "retweets (social support)":
-                thresholds[i] = thresholds[i] * threshold * 10
-            else:
-                thresholds[i] = thresholds[i] * threshold
+            thresholds[i] = thresholds[i] * threshold
 
             log.info("Candidate " + self.ranker_list[i].ranking_function_name +
                      " must be no less than " + str(thresholds[i]))
@@ -228,39 +221,28 @@ class CommunityExpansionAlgorithm:
                 break
         return candidate_list
 
-    # def filter_candidates_round2(self, candidates, community_intersection_threshold):
-    #     """
-    #     Do a second round of candidate filtering where the candidates who belong to a community closest to the
-    #     community of interest are kept. This is done by getting the main community (highest-ranked cluster) that
-    #     the user belongs to and calculating how "close" it is to the main community of interest.
-    #     This takes so much time
-    #     """
-    #     filtered_candidates = []
-    #     for candidate in candidates:
-    #         candidate_main_community, _ = self.get_main_community_user(candidate)
-    #         if len(candidate_main_community.intersection(
-    #                 self.community_of_interest)) >= community_intersection_threshold:
-    #             filtered_candidates.append(candidate)
-    #             log.info('Keep user ' + candidate + ' in the second round of filtering')
-    #     return filtered_candidates
+    def write_setup_community_expansion(self, threshold, top_size, candidates_size, large_account_threshold,
+                                        low_account_threshold, follower_threshold, num_of_candidate):
+        data = [
+            ['threshold', 'top_size', 'candidates_size', 'large_account_threshold', 'low_account_threshold'
+                                                                                    'follower_threshold',
+             'num_of_candidate'],
+            [threshold, top_size, candidates_size, large_account_threshold, low_account_threshold,
+             follower_threshold, num_of_candidate]
+        ]
 
-    def filter_candidates_round2(self, candidates):
-        """
-        Do a second round of candidate filtering where the candidates whose social support ranking score in
-        the community of interest is greater than the threshold, are kept.
-        """
-        kept_filtered_candidates = []
-        # influence1_scores = self.community_influence1_ranker.score_users(candidates, list(self.community_of_interest))
-        social_support_scores = self.community_social_support_ranker.score_users(candidates,
-                                                                                 list(self.community_of_interest))
+        # Open a new CSV file in write mode
+        path = str(get_project_root()) + "/data/old_community_expansion/community_expansion_setup.csv"
+        with open(path, mode='w', newline='') as file:
+            # Create a CSV writer object
+            writer = csv.writer(file)
 
-        for candidate in candidates:
-            social_support_score = social_support_scores[candidate]
-            if social_support_score >= self.community_of_interest_score:
-                kept_filtered_candidates.append(candidate)
-                log.info('Keep user ' + candidate + " in the second round of filtering")
+            # Write the data to the file row by row
+            for row in data:
+                writer.writerow(row)
+        file.close()
 
-        return kept_filtered_candidates
+        log.info('Setup written to community_expansion_setup.csv successfully!')
 
     def expand_community(self, threshold, top_size, candidates_size, large_account_threshold, low_account_threshold,
                          follower_threshold, num_of_candidate, community, mode):
@@ -301,17 +283,11 @@ class CommunityExpansionAlgorithm:
 
             log.info("Potential candidate list length: " + str(len(curr_candidate)))
             log.info("Potential candidate list: \n" + str(curr_candidate))
-            # Fist round of filtering candidates
             filtered_candidate = self.filter_candidates_round1(threshold, top_size, candidates_size,
                                                                large_account_threshold,
                                                                low_account_threshold, community, initial_list,
                                                                curr_candidate,
                                                                mode)
-            # Second round of filtering candidates
-            # community_intersection_threshold = 10
-            # filtered_candidate = self.filter_candidates2(filtered_candidate, community_intersection_threshold)
-
-            filtered_candidate = self.filter_candidates_round2(filtered_candidate)
 
             log.info("Final Candidate List Length(Fixed): " + str(
                 len(filtered_candidate)))
@@ -323,22 +299,19 @@ class CommunityExpansionAlgorithm:
             iteration = iteration + 1
             track_users_list += filtered_candidate
 
-        log.info("COMPLETE: No more users to add to the expanded community.")
-
         community, community_scores = self.intersection_ranker.rank(community, community, mode)
         self.dataset_creator.write_dataset("final_expansion_sorted", -1, community, community, prev_community)
 
         self.graph_plots(track_users_list, mode)
 
-    #Helper functions for plotting purposes
     def graph_progress(self, x_vals, y_vals, fig_name):
         """Graphs the plot of ranking score vs the add order for the final expanded community"""
-        path = str(get_project_root()) + "/data/community_expansion/" + fig_name
+        path = str(get_project_root()) + "/data/old_community_expansion/" + fig_name
         plt.figure(fig_name)
         plt.bar(x_vals, y_vals)
-        plt.ylabel('Final Rank')
+        plt.ylabel('final rank')
         plt.xlabel('Adding order')
-        plt.title('Final rank vs adding order in the ' + fig_name)
+        plt.title('final rank vs adding order in the ' + fig_name)
         plt.savefig(path)
 
     def graph_plots(self, track_users_list, mode):
@@ -347,38 +320,10 @@ class CommunityExpansionAlgorithm:
 
         # graph the final intersection rank vs the adding order for the expanded community
         self.graph_progress(list(range(0, len(track_users_list_score))), track_users_list_score,
-                            "final expansion (intersection ranker)")
+                            "final expansion unsorted intersection")
 
         # graph each ranker score vs the adding order for the expanded community
         for ranker in self.ranker_list:
             scores = ranker.score_users(track_users_list, track_users_list)
             self.graph_progress(list(range(0, len(track_users_list_score))), list(scores.values()),
-                                "final expansion (" + str(ranker.ranking_function_name) + ")")
-
-        # graph social support ranker score vs the adding order for the expanded community
-        scores = self.community_social_support_ranker.score_users(track_users_list, track_users_list)
-        self.graph_progress(list(range(0, len(track_users_list_score))), list(scores.values()),
-                            "final expansion (social support (retweets))")
-
-    def write_setup_community_expansion(self, threshold, top_size, candidates_size, large_account_threshold,
-                                        low_account_threshold, follower_threshold, num_of_candidate):
-        data = [
-            ['threshold', 'top_size', 'candidates_size', 'large_account_threshold', 'low_account_threshold'
-                                                                                    'follower_threshold',
-             'num_of_candidate'],
-            [threshold, top_size, candidates_size, large_account_threshold, low_account_threshold,
-             follower_threshold, num_of_candidate]
-        ]
-
-        # Open a new CSV file in write mode
-        path = str(get_project_root()) + "/data/community_expansion/community_expansion_setup.csv"
-        with open(path, mode='w', newline='') as file:
-            # Create a CSV writer object
-            writer = csv.writer(file)
-
-            # Write the data to the file row by row
-            for row in data:
-                writer.writerow(row)
-        file.close()
-
-        log.info('Setup written to community_expansion_setup.csv successfully!')
+                                "final expansion unsorted " + str(ranker.ranking_function_name))

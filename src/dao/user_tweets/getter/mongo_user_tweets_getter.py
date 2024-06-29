@@ -5,6 +5,10 @@ from dateutil.relativedelta import relativedelta
 
 from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
 from src.model.tweet import Tweet
+import src.dependencies.injector as sdi
+from src.shared.utils import get_project_root
+
+DEFAULT_PATH = str(get_project_root()) + "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 
 
 class MongoUserTweetsGetter(UserTweetsGetter):
@@ -42,44 +46,57 @@ class MongoUserTweetsGetter(UserTweetsGetter):
     def set_user_tweets_collection(self, user_tweets_collection: str) -> None:
         self.user_tweets_collection = user_tweets_collection
 
+    def download_missing_tweets(self, user_id: str):
+        injector = sdi.Injector.get_injector_from_file(DEFAULT_PATH)
+        dao_module = injector.get_dao_module()
+        bluesky_getter = dao_module.get_bluesky_getter()
+        user_tweets_setter = dao_module.get_user_tweets_setter()
+        user_tweets = bluesky_getter.get_tweets_by_user_id(user_id)
+        user_tweets_setter.store_tweets(user_id, user_tweets)
+
     def get_user_tweets(self, user_id: str) -> List[Tweet]:
         """Given a user id, return the tweets"""
         doc = self.user_tweets_collection.find_one({"user_id":str(user_id)})
-        if doc is not None:
-            return list(map(lambda tweet: Tweet.fromDict(tweet), doc["tweets"]))
-        else:
-            return None
+        if doc is None:
+            # Download the missing tweets
+            self.download_missing_tweets(user_id)
+            doc = self.user_tweets_collection.find_one({"user_id":str(user_id)})
+
+        return list(map(lambda tweet: Tweet.fromDict(tweet), doc["tweets"]))
 
     def get_tweets_by_user_ids(self, user_ids: List[str]) -> List[Tweet]:
         """Given a user id, return the tweets"""
         all_tweets = []
         for user_id in user_ids:
-            doc = self.user_tweets_collection.find_one({"user_id":str(user_id)})
-            if doc is not None:
-                all_tweets += list(map(lambda tweet: Tweet.fromDict(tweet), doc["tweets"]))
+            all_tweets += self.get_user_tweets(user_id)
         return all_tweets
 
     def get_tweets_by_user_id_time_restricted(self, user_id: str) -> List[Tweet]:
         from_date = datetime.today() + relativedelta(months=-12)
         # from_date = datetime(2020, 6, 30)
         doc = self.user_tweets_collection.find_one({"user_id":str(user_id)})
+        if doc is None:
+            # Download the missing tweets
+            self.download_missing_tweets(user_id)
+            doc = self.user_tweets_collection.find_one({"user_id": str(user_id)})
         tweets = []
-        if doc is not None:
-            for tweet in doc["tweets"]:
-                if tweet["created_at"] >= from_date:
-                    tweets += Tweet.fromDict(tweet)
-            return tweets
-        else:
-            return None
+        for tweet in doc["tweets"]:
+            if tweet["created_at"] >= from_date:
+                tweets += Tweet.fromDict(tweet)
+        return tweets
 
     def get_user_retweets(self, user_id: str) -> List[Tweet]:
         """Given a user id, return the tweets"""
         doc = self.user_tweets_collection.find_one({"user_id": str(user_id)})
+        if doc is None:
+            # Download the missing tweets
+            self.download_missing_tweets(user_id)
+            doc = self.user_tweets_collection.find_one({"user_id": str(user_id)})
+
         retweets = []
-        if doc is not None:
-            for tweet in doc["tweets"]:
-                if tweet["retweet_user_id"] is not None:
-                    retweets.append(Tweet.fromDict(tweet))
+        for tweet in doc["tweets"]:
+            if tweet["retweet_user_id"] is not None:
+                retweets.append(Tweet.fromDict(tweet))
         return retweets
 
     def get_retweets_by_user_id_time_restricted(self, user_id: str) -> List[Tweet]:

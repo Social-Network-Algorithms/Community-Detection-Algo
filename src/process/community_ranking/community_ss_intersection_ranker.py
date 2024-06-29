@@ -1,18 +1,20 @@
 from typing import List
+
+from src.process.community_ranking.community_intersection_ranker import CommunityIntersectionRanker
 from src.shared.logger_factory import LoggerFactory
 import statistics
 
 log = LoggerFactory.logger(__name__)
 
 
-class CommunitySSIntersectionRanker:
-
+class CommunitySSIntersectionRanker(CommunityIntersectionRanker):
+    """ Intersection ranker for the 2 ranking functions: Influence 1 and social support"""
     def __init__(self, ranker_list):
         self.influence1_ranker = ranker_list[0]
         self.social_support_ranker = ranker_list[1]
         self.ranking_function_name = "intersection"
 
-    def rank(self, user_list: List[str], respection: List[str], mode: bool):
+    def rank(self, user_list: List[str], respection: List[str], mode, do_sort=True):
         log.info("User Length: " + str(len(user_list)))
         ranks = []
 
@@ -29,14 +31,23 @@ class CommunitySSIntersectionRanker:
 
         ranking = {}
 
-        for user in ranks[0]:
+        for user in user_list:
             rank_influence1 = ranks[0].index(user)
             rank_social_support = ranks[1].index(user)
             intersection_rank = max(rank_influence1, rank_social_support)
             ranking[user] = intersection_rank
 
-        intersection_ranking = \
-            [key for key, value in sorted(ranking.items(), key=lambda x: (x[1], x[0]), reverse=False)]
-        log.info("Intersection Rank Length: " + str(len(intersection_ranking)))
+        if do_sort:
+            sorted_ranking = sorted(ranking.items(), key=lambda x: (x[1], x[0]), reverse=False)
+            intersection_ranking_users = \
+                [key for key, value in sorted_ranking]
+            intersection_ranking_scores = \
+                [value for key, value in sorted_ranking]
 
-        return intersection_ranking
+            log.info("Intersection Rank Length: " + str(len(intersection_ranking_users)))
+
+            return intersection_ranking_users, intersection_ranking_scores
+
+        else:
+            return list(ranking.keys()), list(ranking.values())
+

@@ -1,5 +1,4 @@
-from src.process.community_expansion.community_expansion import \
-    CommunityExpansionAlgorithm
+from src.process.old_community_expansion.old_community_expansion import OldCommunityExpansionAlgorithm
 from src.shared.logger_factory import LoggerFactory
 from src.shared.utils import get_project_root
 import csv
@@ -18,13 +17,14 @@ def _is_same_list(list1, list2):
     return True
 
 
-class CoreRefiner(CommunityExpansionAlgorithm):
+class OldCoreRefiner(OldCommunityExpansionAlgorithm):
     """Used to refine initial community, which we assume are a list of core
     users.
     By refining core before expansion, we expect a better result in community
     expansion.
     Refinement stops when no core user changed
     """
+
     def write_setup_core_refiner(self, threshold, top_size, candidates_size,
                                  large_account_threshold, low_account_threshold, follower_threshold,
                                  core_size, num_of_candidate):
@@ -36,7 +36,7 @@ class CoreRefiner(CommunityExpansionAlgorithm):
         ]
 
         # Open a new CSV file in write mode
-        path = str(get_project_root()) + "/data/community_expansion/core_refiner_setup.csv"
+        path = str(get_project_root()) + "/data/old_community_expansion/core_refiner_setup.csv"
         with open(path, mode='w', newline='') as file:
             # Create a CSV writer object
             writer = csv.writer(file)
@@ -95,7 +95,6 @@ class CoreRefiner(CommunityExpansionAlgorithm):
                                                                candidates_size, large_account_threshold,
                                                                low_account_threshold,
                                                                community, prev_community, curr_candidate, mode)
-            filtered_candidate = self.filter_candidates_round2(filtered_candidate)
             log.info("Final Candidate List Length(Fixed): " + str(len(filtered_candidate)))
             log.info("Final Candidate : " + str(filtered_candidate))
             user_names = []

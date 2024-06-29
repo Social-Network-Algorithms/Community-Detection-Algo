@@ -6,34 +6,29 @@ use of the Tweepy library and the Twitter API.
 
 ## Setup
 
-### Twitter Developer Account
+### BlueSky Account
 
-In order to make use of the Twitter API, and the tweepy package, you will need
+In order to make use of the BlueSky API, and the Atproto package, you will need
 credential for the twitter API.
 
-To retrieve these credentials sign up for a developer twitter account [here](https://developer.twitter.com/en/apply-for-access).
+To retrieve these credentials sign up for a regular bluesky account
 
-Getting access may be immediate or may take several days.
-Once your application is approved, you will get four values: 
-`API Key`, `API Key Secret`, `Access Token`, and `Access Token Secret`.
-Create a file with this path `./conf/credentials.py` and enter the four values into the file in this format:
+Create a file with this path `./conf/credentials.py` and enter your username and password in the file in this format:
 ```python
-ACCESS_TOKEN = "<Your Access Token>"
-ACCESS_TOKEN_SECRET = "<Your Access Token Secret>"
-CONSUMER_KEY = "<Your API Key>"
-CONSUMER_SECRET = "<Your API Key Secret>"
+USER_NAME = "<Your Username>"
+PASSWORD = "<Your Password>"
 ```
-Note that the API Key is also known as the Consumer Key.
 
 ### Installing
 Python 3.9 is required for the following installation steps.
 
 Follow the instructions in the main README.md file to setup the environment.
 
-### Notes
-The algorithm, as run below, takes tweets from July 16, 2022 to July 16, 2023. This date is a bit arbitrary, but it is important to fix the date range since no new tweets are being added to the dataset. This can be viewed at `src/dao/raw_tweet/getter/mongo_raw_tweet_getter.py` in the function `get_tweets_by_user_ids`.
-
 ## Running
 
-1. The main program can be started by running `python detect_core_jaccard.py -n {seed_user} -act {user_activity}`. For example 
-`python detect_core_jaccard.py -n "hardmaru" -act "user retweets"` for seed user "hardmaru" and user activity "user retweets".
+1. The main program for core detection can be started by running 
+`python detect_core_jaccard.py -n {seed_user} -act {user_activity}`. For example 
+`python detect_core_jaccard.py -n "doctorvive.bsky.social" -act "user retweets"` for seed user "doctorvive.bsky.social" and user activity "user retweets".
+
+2. The main program for community expansion can be started by running `python ./SNACES.py`. This will trigger the main program to loop, which will then prompt you to input options for which process to trigger.
+Choose option 6 for community expansion.

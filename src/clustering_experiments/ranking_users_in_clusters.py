@@ -17,7 +17,6 @@ def rank_users(user, cluster, path=DEFAULT_PATH):
     #intersection_ranking = get_simple_followers_ranking(user, cluster, path)
 
     top_n_users = [user_getter.get_user_by_id(id).screen_name for id in intersection_ranking]
-    # top_n_users = filter_user_by_clustering(intersection_ranking, "fchollet", user_getter)
     return top_n_users
 
 def get_rankings(user, cluster, new=True, path=DEFAULT_PATH):

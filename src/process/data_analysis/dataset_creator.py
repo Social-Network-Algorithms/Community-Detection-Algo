@@ -80,3 +80,15 @@ class DatasetCreator:
             writer.writerow(row)
         # close the file
         f.close()
+
+    def write_community_of_interest_dataset(self, influence1_threshold, filename_prefix, user_ids, score):
+        file_str = self.file_path + filename_prefix + '.txt'
+        with open(file_str, 'w') as f:
+            for user_id in user_ids:
+                user = self.user_getter.get_user_by_id(user_id)
+                f.write(user.screen_name)
+                f.write("\n")
+            f.write("average score = " + str(score))
+            # f.write("influence1 threshold = " + str(influence1_threshold))
+
+        f.close()

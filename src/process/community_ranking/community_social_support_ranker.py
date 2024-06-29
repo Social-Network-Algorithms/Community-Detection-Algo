@@ -8,14 +8,13 @@ class CommunitySocialSupportRanker(CommunityRanker):
         self.friends_getter = friends_getter
         self.user_tweets_getter = user_tweets_getter
         self.ranking_setter = ranking_setter
-        self.ranking_function_name = "retweets"
+        self.ranking_function_name = "retweets (social support)"
         self.alpha = alpha
 
     def create_friends_dict(self, user_ids):
         friends = {}
         for user_id in user_ids:
             friends_of_user_id = self.friends_getter.get_user_friends_ids(user_id)
-            # print("the friends of " + user_id + " are " + str(friends_of_user_id))
             if friends_of_user_id is None:
                 friends[user_id] = []
             else:
@@ -23,33 +22,10 @@ class CommunitySocialSupportRanker(CommunityRanker):
         return friends
 
     def score_users(self, user_ids: List[str], respection: List[str]):
-        scores = {user_id: 0 for user_id in user_ids} # Initialize all scores to 0
-        friends = self.create_friends_dict(user_ids)
-        tweets = self.user_tweets_getter.get_tweets_by_user_ids(user_ids)
-        # Omit self-retweets
-        tweets = [tweet for tweet in tweets if tweet.user_id != tweet.retweet_id]
-        tweets_by_retweet_group = self._group_by_retweet_id(tweets)
-        def get_retweets_of_tweet_id(tweet_id):
-            return tweets_by_retweet_group.get(str(tweet_id), [])
-        def get_later_retweets_of_tweet_id(tweet_id, created_at):
-            return [tweet for tweet in get_retweets_of_tweet_id(tweet_id) if tweet.created_at > created_at]
-        def is_direct_follower(a, b):
-            # b follows a
-            return a in friends.get(b, [])
+        scores = {}
 
-        for id in tqdm(user_ids):
-            user_tweets = [tweet for tweet in tweets if str(tweet.user_id) == id]
-            original_tweet_ids = [tweet.id for tweet in user_tweets if tweet.retweet_id is None]
-            for original_tweet_id in original_tweet_ids:
-                retweets = get_retweets_of_tweet_id(original_tweet_id)
-                scores[id] += len(retweets)
-
-            user_retweets = [tweet for tweet in user_tweets if tweet.retweet_id is not None]
-            for user_retweet in user_retweets:
-                retweets = get_later_retweets_of_tweet_id(user_retweet.retweet_id, user_retweet.created_at)
-                # The person who retweeted is a direct follower of id.
-                retweets_from_direct_followers = [rtw for rtw in retweets if is_direct_follower(id, str(rtw.user_id))]
-                scores[id] += len(retweets_from_direct_followers) * self.alpha
+        for user_id in user_ids:
+            scores[user_id] = self.score_user(user_id, respection)
 
         return scores
 
@@ -57,12 +33,56 @@ class CommunitySocialSupportRanker(CommunityRanker):
         # Puts all tweets with the same retweet_id in the same list
         # Returns: A dictionary where the key is the retweet_id and
         # the value is the list of tweets with that retweet_id
-        dict = {}
+        retweet_id_map = {}
         for tweet in tweets:
             key = str(tweet.retweet_id)
-            if key in dict:
-                dict[key].append(tweet)
+            if key in retweet_id_map:
+                retweet_id_map[key].append(tweet)
             else:
-                dict[key] = [tweet]
+                retweet_id_map[key] = [tweet]
 
-        return dict
+        return retweet_id_map
+
+    def score_user(self, user_id: str, user_ids: List[str]):
+        if user_id not in user_ids:
+            user_ids = user_ids + [user_id]
+            weight = 1
+        else:
+            weight = len(user_ids) / (len(user_ids) - 1)
+
+        # Score users with their average number of retweets from direct followers
+        friends = self.create_friends_dict(user_ids)
+        score = 0
+
+        tweets = self.user_tweets_getter.get_tweets_by_user_ids(user_ids)
+        # log.info("Get tweets from Database")
+        valid_tweets = [tweet for tweet in tweets if tweet.retweet_user_id != tweet.user_id] # omit self-retweets
+
+        # Define helper functions
+        tweets_by_retweet_group = self._group_by_retweet_id(valid_tweets)
+        def get_retweets_of_tweet_id(tweet_id):
+            return tweets_by_retweet_group.get(str(tweet_id), [])
+        def get_later_retweets_of_tweet_id(tweet_id, created_at):
+            return [tweet for tweet in get_retweets_of_tweet_id(tweet_id) if tweet.created_at > created_at]
+        def is_direct_follower(a, b):
+            return a in friends.get(b, [])
+
+
+        user_tweets = [tweet for tweet in valid_tweets if str(tweet.user_id) == user_id]
+
+        # Score original tweets
+        user_original_tweets = [tweet for tweet in user_tweets if tweet.retweet_id is None]
+        for original_tweet in user_original_tweets:
+            retweets = get_retweets_of_tweet_id(original_tweet.id)
+            retweets_from_direct_followers = [rtw for rtw in retweets if is_direct_follower(user_id, str(rtw.user_id))]
+            score += len(retweets_from_direct_followers)
+
+        # Score retweets
+        user_retweets = [tweet for tweet in user_tweets if tweet.retweet_id is not None]
+        for user_retweet in user_retweets:
+            retweets = get_later_retweets_of_tweet_id(user_retweet.retweet_id, user_retweet.created_at)
+            retweets_from_direct_followers = [rtw for rtw in retweets if is_direct_follower(user_id, str(rtw.user_id))]
+            score += len(retweets_from_direct_followers)
+
+        return score * weight
+

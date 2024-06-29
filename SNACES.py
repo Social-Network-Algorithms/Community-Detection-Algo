@@ -1,17 +1,7 @@
 #!/usr/bin/env python
-import re
-import time
-
 import click
 
-from src.process.community_expansion.community_expansion import CommunityExpansionAlgorithm
-from src.process.community_expansion.core_refiner import CoreRefiner
-from src.process.community_ranking.community_consumption_utility_ranker import CommunityConsumptionUtilityRanker
-from src.process.community_ranking.community_influence_one_ranker import CommunityInfluenceOneRanker
-from src.process.community_ranking.community_influence_two_ranker import CommunityInfluenceTwoRanker
-from src.process.community_ranking.community_production_utility_ranker import CommunityProductionUtilityRanker
-from src.process.community_ranking.community_social_support_ranker import CommunitySocialSupportRanker
-from src.process.data_analysis.dataset_creator import DatasetCreator
+from src.shared.logger_factory import LoggerFactory
 from src.shared.utils import get_project_root
 from src.tools.user_list_processor import UserListProcessor
 import src.dependencies.injector as sdi
@@ -19,7 +9,8 @@ import src.dependencies.injector as sdi
 # Download
 import src.tools.download_daemon as download_daemon
 from src.shared.utils import get_date
-from src.process.download.bluesky_downloader import BlueskyTweetDownloader, BlueskyFriendsDownloader, BlueskyFollowersDownloader
+from src.process.download.bluesky_downloader import BlueskyTweetDownloader, BlueskyFriendsDownloader, \
+    BlueskyFollowersDownloader
 
 # Raw Tweet Processing 
 from src.process.raw_tweet_processing.raw_tweet_processor import RawTweetProcessor
@@ -45,11 +36,26 @@ from src.process.clustering.MUISI.muisi_config_parser import MUISIConfigParser
 # MUISI Retweets
 from src.process.clustering.MUISI.retweets.muisi_retweet import MUISIRetweet, MUISIRetweetConfig
 
+# Community Expansion
+from src.process.community_expansion.community_expansion import CommunityExpansionAlgorithm
+from src.process.community_expansion.core_refiner import CoreRefiner
+from src.process.community_expansion.get_community_of_interest import GetCommunityOfInterest
+from src.process.community_ranking.community_consumption_utility_ranker import CommunityConsumptionUtilityRanker
+from src.process.community_ranking.community_influence_one_ranker import CommunityInfluenceOneRanker
+from src.process.community_ranking.community_influence_two_ranker import CommunityInfluenceTwoRanker
+from src.process.community_ranking.community_intersection_ranker_all import CommunityIntersectionRankerAll
+from src.process.community_ranking.community_production_utility_ranker import CommunityProductionUtilityRanker
+from src.process.community_ranking.community_social_support_ranker import CommunitySocialSupportRanker
+from src.process.community_ranking.community_ss_intersection_ranker import CommunitySSIntersectionRanker
+from src.process.data_analysis.dataset_creator import DatasetCreator
+
 path = str(get_project_root()) + \
-                   "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
+       "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
 injector = sdi.Injector.get_injector_from_file(path)
 process_module = injector.get_process_module()
 dao_module = injector.get_dao_module()
+log = LoggerFactory.logger(__name__)
+
 
 # CLI Helpers
 def get_user():
@@ -64,6 +70,7 @@ def get_user():
         user_or_user_list = click.prompt("User")
 
     return use_user_list, user_or_user_list, ulp
+
 
 # Event handlers
 def run_download():
@@ -88,7 +95,6 @@ def run_download():
         click.echo("2. Random Tweets")
         tweet_type = click.prompt("Choose what to download", type=int)
         if tweet_type == 1:
-            # TODO: follow by this example
             click.echo("Downloading User Tweets")
             use_user_list, user_or_user_list, ulp = get_user()
             # num_tweets = click.prompt("Number of Tweets(leave blank to get all)", type=int)
@@ -96,13 +102,16 @@ def run_download():
                 start_date = get_date(click.prompt("Start Date(YYYY-MM-DD)"))
                 end_date = get_date(click.prompt("End Date(YYYY-MM-DD)"))
                 if use_user_list:
-                    ulp.run_function_by_user_list(tweet_downloader.gen_user_tweets, user_or_user_list, twitter_getter, user_tweets_setter, None, start_date, end_date)
-                else:    
-                    tweet_downloader.gen_user_tweets(user_or_user_list, twitter_getter, user_tweets_setter, None, start_date, end_date)
+                    ulp.run_function_by_user_list(tweet_downloader.gen_user_tweets, user_or_user_list, twitter_getter,
+                                                  user_tweets_setter, None, start_date, end_date)
+                else:
+                    tweet_downloader.gen_user_tweets(user_or_user_list, twitter_getter, user_tweets_setter, None,
+                                                     start_date, end_date)
             else:
                 if use_user_list:
-                    ulp.run_function_by_user_list(tweet_downloader.gen_user_tweets, user_or_user_list, twitter_getter, user_tweets_setter, None)
-                else:    
+                    ulp.run_function_by_user_list(tweet_downloader.gen_user_tweets, user_or_user_list, twitter_getter,
+                                                  user_tweets_setter, None)
+                else:
                     tweet_downloader.gen_user_tweets(user_or_user_list, twitter_getter, user_tweets_setter, None)
         elif tweet_type == 2:
             click.echo("Downloading Random Tweets")
@@ -110,30 +119,34 @@ def run_download():
             if click.confirm("Do you wish to launch a daemon to download random tweets?"):
                 click.echo("Launching daemon")
                 download_daemon.download_random_tweet()
-            else:    
+            else:
                 tweet_downloader.gen_random_tweet(twitter_getter, user_tweets_setter)
     elif download_type == 2:
         click.echo("Friend Download Types")
         click.echo("1. User Friends")
         click.echo("2. User Local Neighborhood")
         friend_type = click.prompt("Choose which to download", type=int)
-        
+
         friends_downloader = BlueskyFriendsDownloader()
         if friend_type == 1:
             click.echo("Downloading user friends")
             use_user_list, user_or_user_list, ulp = get_user()
             # num_friends = click.prompt("Number of Friends(leave blank to get all)", type=int)
             if use_user_list:
-                ulp.run_function_by_user_list(friends_downloader.gen_friends_ids_by_screen_name_or_id, user_or_user_list, twitter_getter, user_friends_setter, None)
+                ulp.run_function_by_user_list(friends_downloader.gen_friends_ids_by_screen_name_or_id,
+                                              user_or_user_list, twitter_getter, user_friends_setter, None)
             else:
-                friends_downloader.gen_friends_ids_by_screen_name_or_id(user_or_user_list, twitter_getter, user_friends_setter, None)
+                friends_downloader.gen_friends_ids_by_screen_name_or_id(user_or_user_list, twitter_getter,
+                                                                        user_friends_setter, None)
         elif friend_type == 2:
             click.echo("Downloading user local neighborhood")
             use_user_list, user_or_user_list, ulp = get_user()
             if use_user_list:
-                ulp.run_function_by_user_list(friends_downloader.gen_user_local_neighborhood, user_or_user_list, twitter_getter, user_friends_getter, user_friends_setter)
+                ulp.run_function_by_user_list(friends_downloader.gen_user_local_neighborhood, user_or_user_list,
+                                              twitter_getter, user_friends_getter, user_friends_setter)
             else:
-                friends_downloader.gen_user_local_neighborhood(user_or_user_list, twitter_getter, user_friends_getter, user_friends_setter)
+                friends_downloader.gen_user_local_neighborhood(user_or_user_list, twitter_getter, user_friends_getter,
+                                                               user_friends_setter)
         else:
             raise Exception("Invalid input")
     elif download_type == 3:
@@ -142,11 +155,14 @@ def run_download():
         # num_followers = click.prompt("Number of Followers(leave blank to get all)", type=int)
         followers_downloader = BlueskyFollowersDownloader()
         if use_user_list:
-            ulp.run_function_by_user_list(followers_downloader.gen_followers_by_screen_name_or_id, user_or_user_list, twitter_getter, user_followers_setter, None)
+            ulp.run_function_by_user_list(followers_downloader.gen_followers_by_screen_name_or_id, user_or_user_list,
+                                          twitter_getter, user_followers_setter, None)
         else:
-            followers_downloader.gen_followers_by_screen_name_or_id(user_or_user_list, twitter_getter, user_followers_setter, None)
+            followers_downloader.gen_followers_by_screen_name_or_id(user_or_user_list, twitter_getter,
+                                                                    user_followers_setter, None)
     else:
         raise Exception("Invalid input")
+
 
 def run_rt_processing():
     click.echo("Provide the full path the the raw tweet processing config(leave blank to set to default)")
@@ -170,9 +186,11 @@ def run_rt_processing():
             ulp.run_function_by_user_list(tweet_processor.gen_processed_user_tweets, user_or_user_list,
                                           user_getter, user_tweets_getter, user_processed_tweet_setter)
         else:
-            tweet_processor.gen_processed_user_tweets(user_or_user_list, user_getter, user_tweets_getter, user_processed_tweet_setter)
+            tweet_processor.gen_processed_user_tweets(user_or_user_list, user_getter, user_tweets_getter,
+                                                      user_processed_tweet_setter)
     else:
         raise Exception("Invalid input")
+
 
 def run_wf():
     user_processed_tweets_getter = dao_module.get_user_processed_tweets_getter()
@@ -205,7 +223,9 @@ def run_wf():
         global_wf_getter = dao_module.get_global_word_frequency_getter()
         user_wf_getter = dao_module.get_user_word_frequency_getter()
         user_rwf_setter = dao_module.get_user_relative_word_frequency_setter()
-        word_freq.gen_relative_user_word_frequency_vector(global_wf_getter, user_wf_getter, user_rwf_setter, user_processed_tweets_getter)
+        word_freq.gen_relative_user_word_frequency_vector(global_wf_getter, user_wf_getter, user_rwf_setter,
+                                                          user_processed_tweets_getter)
+
 
 def run_social_graph():
     user_getter = dao_module.get_user_getter()
@@ -222,11 +242,14 @@ def run_social_graph():
         click.echo("Reminder: make sure to have downloaded the local neighborhood for your user of interest")
         use_user_list, user_or_user_list, ulp = get_user()
         if use_user_list:
-            ulp.run_function_by_user_list(social_graph.gen_user_friends_graph, user_or_user_list, user_friends_getter, social_graph_setter)
+            ulp.run_function_by_user_list(social_graph.gen_user_friends_graph, user_or_user_list, user_friends_getter,
+                                          social_graph_setter)
         else:
-            social_graph.gen_user_friends_graph(user_or_user_list, user_getter, user_friends_getter, social_graph_setter)
+            social_graph.gen_user_friends_graph(user_or_user_list, user_getter, user_friends_getter,
+                                                social_graph_setter)
     else:
         raise Exception("Invalid input")
+
 
 def run_clustering():
     click.echo("Clustering Algorithms")
@@ -278,7 +301,8 @@ def run_clustering():
             item_count = click.prompt("Item Count", type=int)
             count = click.prompt("Count", type=int)
             is_only_popularity = click.confirm("Do you wish to only compute based on popularity?")
-            muisi_config = MUISIConfig(intersection_min, popularity, threshold, user_count, item_count, count, is_only_popularity)
+            muisi_config = MUISIConfig(intersection_min, popularity, threshold, user_count, item_count, count,
+                                       is_only_popularity)
 
             user_wf_getter = dao_module.get_user_word_frequency_getter()
             user_rwf_getter = dao_module.get_user_relative_word_frequency_getter()
@@ -304,21 +328,46 @@ def run_clustering():
     else:
         raise Exception("Invalid input")
 
+
 def run_community_expansion():
     click.echo("Community Expansion")
     click.echo("Assume initial users are CORE users. "
                "The cleaner initial users are, the better expansion result.")
 
-    threshold = 0.2
-    top_size = 5
-    candidates_size = 40
-    large_account_threshold = 1.5
-    num_of_candidate = 200
-    core_size = 20
-    ranker_list = []
-    initial_user_list = ['katharinehayhoe.com', 'edhawkins.bsky.social', 'indianaclimate.bsky.social', 'peterthorne.bsky.social', 'meadekrosby.bsky.social', 'zlabe.bsky.social', 'micefearboggis.bsky.social', 'mathewabarlow.bsky.social', 'irishrainforest.bsky.social', 'seismatters.bsky.social']
-    # get user ids of the users in initial_user_list
     bluesky_getter = dao_module.get_bluesky_getter()
+    user_tweets_getter = dao_module.get_user_tweets_getter()
+    friends_getter = dao_module.get_user_friend_getter()
+    ranking_setter = dao_module.get_ranking_setter()
+    user_getter = dao_module.get_user_getter()
+    user_downloader = process_module.get_user_downloader()
+    user_tweet_downloader = process_module.get_user_tweet_downloader()
+    friend_downloader = process_module.get_friend_downloader()
+
+    community_social_support_ranker = CommunitySocialSupportRanker(user_tweets_getter, friends_getter, ranking_setter)
+    community_influence1_ranker = CommunityInfluenceOneRanker(user_tweets_getter, friends_getter, ranking_setter)
+    community_influence2_ranker = CommunityInfluenceTwoRanker(user_tweets_getter, friends_getter, ranking_setter)
+    community_production_ranker = CommunityProductionUtilityRanker(user_tweets_getter, friends_getter, ranking_setter)
+    community_consumption_ranker = CommunityConsumptionUtilityRanker(user_tweets_getter, friends_getter, ranking_setter)
+
+    # Use social support intersection ranker for core refinement
+    ranker_list_core_refiner = [community_influence1_ranker, community_social_support_ranker]
+    intersection_ranker_core_refiner = CommunitySSIntersectionRanker(ranker_list_core_refiner)
+
+    # Use [Influence 1, Influence 2, Production utility, Consumption utility] intersection ranker for community expansion
+    ranker_list_expansion = [community_influence1_ranker, community_influence2_ranker, community_production_ranker,
+                             community_consumption_ranker]
+    intersection_ranker_expansion = CommunityIntersectionRankerAll(ranker_list_expansion)
+
+    # Use social support intersection ranker for community expansion
+    # ranker_list_expansion = [community_influence1_ranker, community_social_support_ranker]
+    # intersection_ranker_expansion = CommunitySSIntersectionRanker(ranker_list_core_refiner)
+
+    # TODO: test with different initial core users
+    initial_user_list = ['katharinehayhoe.com', 'edhawkins.bsky.social', 'indianaclimate.bsky.social',
+                         'peterthorne.bsky.social', 'meadekrosby.bsky.social', 'zlabe.bsky.social',
+                         'micefearboggis.bsky.social', 'mathewabarlow.bsky.social', 'irishrainforest.bsky.social',
+                         'seismatters.bsky.social']
+    # get user ids of the users in initial_user_list
     initial_user_list2 = []
     for initial_user in initial_user_list:
         initial_user_list2.append(bluesky_getter.get_user_by_screen_name(initial_user).id)
@@ -326,137 +375,85 @@ def run_community_expansion():
 
     file_path = str(get_project_root()) + "/data/community_expansion/"
 
-    run_default = click.prompt("Run default test?(y/n)", type=str)
-    if run_default == "y":
-        ranker_list.append(CommunityInfluenceOneRanker(
-            dao_module.get_user_tweets_getter(),
-            dao_module.get_user_friend_getter(),
-            dao_module.get_ranking_setter()))
-        ranker_list.append(CommunityInfluenceTwoRanker(
-            dao_module.get_user_tweets_getter(),
-            dao_module.get_user_friend_getter(),
-            dao_module.get_ranking_setter()))
-        ranker_list.append(CommunityProductionUtilityRanker(
-            dao_module.get_user_tweets_getter(),
-            dao_module.get_user_friend_getter(),
-            dao_module.get_ranking_setter()))
-        ranker_list.append(CommunityConsumptionUtilityRanker(
-            dao_module.get_user_tweets_getter(),
-            dao_module.get_user_friend_getter(),
-            dao_module.get_ranking_setter()))
-    else:
-        click.echo("Initial User Types:")
-        click.echo("1. Provide initial userid list")
-        click.echo("2. Provide initial username list")
-        initial_user_type = click.prompt("Choose an initial user type", type=int)
-        if initial_user_type == 1:
-            initial_user_list = click.prompt(
-                "Provide initial user list", type=str)
-            initial_user_list = re.sub("[^\d,]*", '', initial_user_list).split(",")
-            click.echo("Initial user list received: ")
-            click.echo(initial_user_list)
-        elif initial_user_type == 2:
-            initial_user_list = click.prompt(
-                "Provide initial user list", type=str)
-            initial_user_list = re.sub('[^a-zA-Z0-9@/_ \n\.]', '',
-                                       initial_user_list).split(" ")
-            click.echo("Initial user list received: ")
-            click.echo(initial_user_list)
-            initial_user_list2 = []
-            for initial_user in initial_user_list:
-                initial_user_list2.append(bluesky_getter.get_user_by_screen_name(initial_user).id)
-            initial_user_list = initial_user_list2
-
-        # Currently, we use at most 4 ranking functions
-        # InfluenceOneRanker, InfluenceTwoRanker, ProductionUtilityRanker,
-        # ConsumptionUtilityRanker
-        click.echo("Select Utilities:")
-        ranker_list = []
-        use_utility = click.prompt("Use Influence One?(y/n)", type=str)
-        if use_utility == "y":
-            ranker_list.append(CommunityInfluenceOneRanker(
-                dao_module.get_user_tweets_getter(),
-                dao_module.get_user_friend_getter(),
-                dao_module.get_ranking_setter()))
-        use_utility = click.prompt("Use Influence Two?(y/n)", type=str)
-        if use_utility == "y":
-            ranker_list.append(CommunityInfluenceTwoRanker(
-                dao_module.get_user_tweets_getter(),
-                dao_module.get_user_friend_getter(),
-                dao_module.get_ranking_setter()))
-        use_utility = click.prompt("Use Production Utility?(y/n)", type=str)
-        if use_utility == "y":
-            ranker_list.append(CommunityProductionUtilityRanker(
-                dao_module.get_user_tweets_getter(),
-                dao_module.get_user_friend_getter(),
-                dao_module.get_ranking_setter()))
-        use_utility = click.prompt("Use Consumption Utility?(y/n)", type=str)
-        if use_utility == "y":
-            ranker_list.append(CommunityConsumptionUtilityRanker(
-                dao_module.get_user_tweets_getter(),
-                dao_module.get_user_friend_getter(),
-                dao_module.get_ranking_setter()))
-        use_utility = click.prompt("Use Social Support?(y/n)", type=str)
-        if use_utility == "y":
-            ranker_list.append(CommunitySocialSupportRanker(
-                dao_module.get_user_tweets_getter(),
-                dao_module.get_user_friend_getter(),
-                dao_module.get_ranking_setter()))
-        threshold = click.prompt(
-            "Threshold X for utility filtering in decimal"
-            "(i.e. top user utility score * 0.2)", type=float)
-        top_size = click.prompt(
-            "Top X users to measure threshold(i.e. 5)", type=int)
-        candidates_size = click.prompt(
-            "Number of candidate added each iteration(i.e. 40)", type=int)
-        large_account_threshold = click.prompt(
-            "Limit X on number of followers in decimal"
-            "(i.e. top user follower count * 1.5)\n"
-            "If there is no restriction, enter -1", type=float)
-        num_of_candidate = click.prompt(
-            "Number of potential candidate we check each iteration"
-            "(i.e. 200)", type=int)
-
-        core_size = click.prompt(
-            "If refine initial users before expansion, "
-            "enter number of core users expected in community(i.e. 20)\n"
-            "Otherwise, enter -1.", type=int)
-
-    dataset_creator = DatasetCreator(
+    dataset_creator_core_refiner = DatasetCreator(
         file_path,
-        dao_module.get_user_getter(),
-        process_module.get_user_downloader(),
-        dao_module.get_user_tweets_getter(),
-        process_module.get_user_tweet_downloader(),
-        dao_module.get_user_friend_getter(),
-        process_module.get_friend_downloader(),
-        ranker_list)
+        user_getter,
+        user_downloader,
+        user_tweets_getter,
+        user_tweet_downloader,
+        friends_getter,
+        friend_downloader,
+        ranker_list_core_refiner)
 
-    if core_size != -1:
-        core_refiner = CoreRefiner(dao_module.get_user_getter(),
-                                   process_module.get_user_downloader(),
-                                   dao_module.get_user_tweets_getter(),
-                                   process_module.get_user_tweet_downloader(),
-                                   dao_module.get_user_friend_getter(),
-                                   process_module.get_friend_downloader(),
-                                   ranker_list, dataset_creator)
-        initial_user_list = core_refiner.refine_core(
-            threshold=0.025, top_size=5, candidates_size=20, large_account_threshold=1.5, low_account_threshold=0.5,
-            follower_threshold=0.5, core_size=20, num_of_candidate=200, community=initial_user_list, mode=False)
+    dataset_creator_expansion = DatasetCreator(
+        file_path,
+        user_getter,
+        user_downloader,
+        user_tweets_getter,
+        user_tweet_downloader,
+        friends_getter,
+        friend_downloader,
+        ranker_list_expansion)
+
+    # Get the community of interest for the initial core users and do a second round of filtering for the core refiner
+    # candidates based on that
+    community_of_interest = GetCommunityOfInterest(user_getter, ranker_list_core_refiner, user_tweets_getter, friends_getter)
+
+    ranker_threshold_core_refiner = 0.09
+    community_of_interest_core_refiner, community_of_interest_core_refiner_score = \
+        community_of_interest.get_main_community(initial_user_list,
+                                                 ranker_threshold=ranker_threshold_core_refiner)
+    dataset_creator_core_refiner.write_community_of_interest_dataset(ranker_threshold_core_refiner,
+                                                                     "final_community_of_interest_core_refiner",
+                                                                     community_of_interest_core_refiner,
+                                                                     community_of_interest_core_refiner_score)
+
+    core_refiner = CoreRefiner(user_getter,
+                               user_downloader,
+                               user_tweets_getter,
+                               user_tweet_downloader,
+                               friends_getter,
+                               friend_downloader,
+                               ranker_list_core_refiner,
+                               intersection_ranker_core_refiner,
+                               dataset_creator_core_refiner,
+                               community_of_interest_core_refiner,
+                               community_of_interest_core_refiner_score)
+
+    initial_user_list = core_refiner.refine_core(
+        threshold=0.025, top_size=5, candidates_size=20, large_account_threshold=1.5, low_account_threshold=0.5,
+        follower_threshold=0.5, core_size=20, num_of_candidate=200, community=initial_user_list, mode=False)
+
+    # Get the community of interest for the refined core users and do a second round of filtering for the expanded
+    # community based on that
+    ranker_threshold_expansion = 0.015
+    community_of_interest_expansion, community_of_interest_expansion_score = \
+        community_of_interest.get_main_community(initial_user_list, ranker_threshold=ranker_threshold_expansion)
+    dataset_creator_expansion.write_community_of_interest_dataset(ranker_threshold_expansion,
+                                                                  "final_community_of_interest",
+                                                                  community_of_interest_expansion,
+                                                                  community_of_interest_expansion_score)
 
     algorithm = CommunityExpansionAlgorithm(
-        dao_module.get_user_getter(),
-        process_module.get_user_downloader(),
-        dao_module.get_user_tweets_getter(),
-        process_module.get_user_tweet_downloader(),
-        dao_module.get_user_friend_getter(),
-        process_module.get_friend_downloader(),
-        ranker_list, dataset_creator)
+        user_getter,
+        user_downloader,
+        user_tweets_getter,
+        user_tweet_downloader,
+        friends_getter,
+        friend_downloader,
+        ranker_list_expansion,
+        intersection_ranker_expansion,
+        dataset_creator_expansion,
+        community_of_interest_expansion,
+        community_of_interest_expansion_score)
 
+    # Since we are doing a second-round candidate filtering in community expansion algorithm, we relax the thresholds
+    # and increase candidates size
     algorithm.expand_community(
-        threshold=0.025, top_size=10, candidates_size=30,
-        large_account_threshold=2.0, low_account_threshold=0.25, follower_threshold=0.2,
-        num_of_candidate=500, community=initial_user_list, mode=True)
+        threshold=0.01, top_size=10, candidates_size=60,
+        large_account_threshold=2.5, low_account_threshold=0.1, follower_threshold=0.1,
+        num_of_candidate=500, community=initial_user_list, mode=False)
+
 
 @click.command()
 def main():
@@ -487,6 +484,7 @@ def main():
         run_community_expansion()
     else:
         raise Exception("Invalid input")
+
 
 if __name__ == "__main__":
     main()
