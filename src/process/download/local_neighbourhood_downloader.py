@@ -88,11 +88,6 @@ class LocalNeighbourhoodDownloader():
                 elif self.user_activity == "user retweets":
                     # download the original user retweets of the friend
                     all_tweets = self.user_tweets_getter.get_user_tweets(id)
-                    if all_tweets is None:
-                        # download tweets for user if not available and store them
-                        self.user_tweets_setter.store_tweets(id, self.bluesky_getter.get_tweets_by_user_id(id, 600))
-                        all_tweets = self.user_tweets_getter.get_user_tweets(id)
-
                     retweeted_users = [tweet.retweet_user_id for tweet in all_tweets if tweet.retweet_user_id is not None]
                     self.retweeted_user_setter.store_retweet_users(id, retweeted_users)
                     user_activities = self.user_activity_getter.get_user_activities(id)

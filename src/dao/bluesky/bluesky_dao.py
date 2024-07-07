@@ -51,3 +51,5 @@ class BlueSkyGetter():
     def get_random_tweet(self) -> Tweet:
         raise NotImplementedError("Subclasses should implement this")
 
+    def get_users_relationships(self, user_id_1: str, user_list) -> dict:
+        raise NotImplementedError("Subclasses should implement this")

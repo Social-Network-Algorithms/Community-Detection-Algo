@@ -51,7 +51,7 @@ class MongoUserTweetsGetter(UserTweetsGetter):
         dao_module = injector.get_dao_module()
         bluesky_getter = dao_module.get_bluesky_getter()
         user_tweets_setter = dao_module.get_user_tweets_setter()
-        user_tweets = bluesky_getter.get_tweets_by_user_id(user_id)
+        user_tweets = bluesky_getter.get_tweets_by_user_id(user_id, 600)
         user_tweets_setter.store_tweets(user_id, user_tweets)
 
     def get_user_tweets(self, user_id: str) -> List[Tweet]:

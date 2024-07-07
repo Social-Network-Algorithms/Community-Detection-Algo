@@ -1,3 +1,4 @@
+import logging
 from time import sleep
 
 from atproto_client import SessionEvent, Session
@@ -85,6 +86,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
         return None
 
     def get_tweets_by_user_id(self, user_id, num_tweets=0, start_date=None, end_date=None):
+        # logging.getLogger("httpx").setLevel(logging.WARNING)
         tweets = []
         has_more = True
         params = {'actor': user_id, 'filter': 'posts_and_author_threads', 'cursor': '', 'limit': 100}
@@ -244,3 +246,23 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
             random_post = None
 
         return random_post
+
+    def get_users_relationships(self, user_id_1: str, user_list) -> dict:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+        relationships_dict = {}
+        params = {'actor': user_id_1, 'others': user_list}
+        try:
+            response = self.client.app.bsky.graph.get_relationships(params=params)
+            relationships = response["relationships"]
+            for relationship in relationships:
+                user = relationship["did"]
+                relationships_dict[user] = [0, 0]
+                if relationship["followed_by"] is not None:
+                    relationships_dict[user][0] = 1
+                if relationship["following"] is not None:
+                    relationships_dict[user][1] = 1
+
+        except Exception as e:
+            pass
+
+        return relationships_dict
