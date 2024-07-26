@@ -3,6 +3,7 @@ from time import sleep
 
 from atproto_client import SessionEvent, Session
 from atproto_firehose import FirehoseSubscribeLabelsClient, parse_subscribe_labels_message
+from click.core import batch
 
 import conf.credentials as credentials
 from typing import Union, List, Dict, Tuple, Optional
@@ -22,6 +23,7 @@ class BlueSkyAuthenticator():
     client = Client()
 
     def login(self):
+        logging.getLogger("httpx").setLevel(logging.WARNING)
         self.client.on_session_change(self.on_session_change)
 
         session_string = self.get_session()
@@ -58,6 +60,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
         self.client = BlueSkyAuthenticator().login()
 
     def get_user_by_id(self, user_id: str) -> User:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
         params = {'actor': user_id}
         at_user = None
         try:
@@ -72,6 +75,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
         return None
 
     def get_user_by_screen_name(self, screen_name: str) -> User:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
         params = {'actor': screen_name}
         at_user = None
         try:
@@ -86,7 +90,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
         return None
 
     def get_tweets_by_user_id(self, user_id, num_tweets=0, start_date=None, end_date=None):
-        # logging.getLogger("httpx").setLevel(logging.WARNING)
+        logging.getLogger("httpx").setLevel(logging.WARNING)
         tweets = []
         has_more = True
         params = {'actor': user_id, 'filter': 'posts_and_author_threads', 'cursor': '', 'limit': 100}
@@ -116,6 +120,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
         return list(filter(pred, tweets)) if start_date and end_date else list(tweets)
 
     def get_friends_ids_by_user_id(self, user_id: str, num_friends=0) -> Tuple[str, List[str]]:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
         friends_user_ids = []
         params = {'actor': user_id, 'cursor': '', 'limit': 100}
         has_more = True
@@ -139,6 +144,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
         return user_id, friends_user_ids
 
     def get_friends_users_by_user_id(self, user_id: str, num_friends=0) -> Tuple[str, List[User]]:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
         """
         @param user_id id of the user to get friends for
         @param num_friends: 0 means ALL friends, based on tweepy.Cursor.items()
@@ -172,6 +178,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
         return user_id, friends_users
 
     def get_followers_ids_by_user_id(self, user_id: str, num_followers=0) -> Tuple[str, List[str]]:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
         followers_user_ids = []
         params = {'actor': user_id, 'cursor': '', 'limit': 100}
 
@@ -198,6 +205,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
         return user_id, followers_user_ids
 
     def get_followers_users_by_user_id(self, user_id: str, num_followers=0) -> Tuple[str, List[User]]:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
         followers_users = []
         count = 0
         params = {'actor': user_id, 'cursor': '', 'limit': 100}
@@ -250,19 +258,19 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
     def get_users_relationships(self, user_id_1: str, user_list) -> dict:
         logging.getLogger("httpx").setLevel(logging.WARNING)
         relationships_dict = {}
-        params = {'actor': user_id_1, 'others': user_list}
-        try:
-            response = self.client.app.bsky.graph.get_relationships(params=params)
-            relationships = response["relationships"]
-            for relationship in relationships:
-                user = relationship["did"]
-                relationships_dict[user] = [0, 0]
-                if relationship["followed_by"] is not None:
-                    relationships_dict[user][0] = 1
-                if relationship["following"] is not None:
-                    relationships_dict[user][1] = 1
-
-        except Exception as e:
-            pass
+        for x in batch(user_list, 30):
+            params = {'actor': user_id_1, 'others': list(x)}
+            try:
+                response = self.client.app.bsky.graph.get_relationships(params=params)
+                relationships = response["relationships"]
+                for relationship in relationships:
+                    user = relationship["did"]
+                    relationships_dict[user] = [0, 0]
+                    if relationship["followed_by"] is not None:
+                        relationships_dict[user][0] = 1
+                    if relationship["following"] is not None:
+                        relationships_dict[user][1] = 1
+            except Exception as e:
+                pass
 
         return relationships_dict

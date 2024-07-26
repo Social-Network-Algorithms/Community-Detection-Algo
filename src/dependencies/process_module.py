@@ -208,8 +208,6 @@ class ProcessModule():
         user_tweets_setter = self.dao_module.get_user_tweets_setter()
         user_getter = self.dao_module.get_user_getter()
 
-        print("User Getter is none? " + str(user_getter is None))
-
         user_tweet_downloader = UserTweetDownloader(bluesky_getter, user_tweets_getter, user_tweets_setter,
                                                     user_getter)
 

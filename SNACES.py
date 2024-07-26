@@ -39,14 +39,6 @@ from src.process.clustering.MUISI.retweets.muisi_retweet import MUISIRetweet, MU
 # Community Expansion
 from src.process.community_expansion.community_expansion import CommunityExpansionAlgorithm
 from src.process.community_expansion.core_refiner import CoreRefiner
-from src.process.community_expansion.get_community_of_interest import GetCommunityOfInterest
-from src.process.community_ranking.community_consumption_utility_ranker import CommunityConsumptionUtilityRanker
-from src.process.community_ranking.community_influence_one_ranker import CommunityInfluenceOneRanker
-from src.process.community_ranking.community_influence_two_ranker import CommunityInfluenceTwoRanker
-from src.process.community_ranking.community_intersection_ranker_all import CommunityIntersectionRankerAll
-from src.process.community_ranking.community_production_utility_ranker import CommunityProductionUtilityRanker
-from src.process.community_ranking.community_social_support_ranker import CommunitySocialSupportRanker
-from src.process.community_ranking.community_ss_intersection_ranker import CommunitySSIntersectionRanker
 from src.process.data_analysis.dataset_creator import DatasetCreator
 
 path = str(get_project_root()) + \
@@ -337,36 +329,14 @@ def run_community_expansion():
     bluesky_getter = dao_module.get_bluesky_getter()
     user_tweets_getter = dao_module.get_user_tweets_getter()
     friends_getter = dao_module.get_user_friend_getter()
-    ranking_setter = dao_module.get_ranking_setter()
     user_getter = dao_module.get_user_getter()
-    user_downloader = process_module.get_user_downloader()
-    user_tweet_downloader = process_module.get_user_tweet_downloader()
-    friend_downloader = process_module.get_friend_downloader()
-
-    community_social_support_ranker = CommunitySocialSupportRanker(user_tweets_getter, friends_getter, ranking_setter)
-    community_influence1_ranker = CommunityInfluenceOneRanker(user_tweets_getter, friends_getter, ranking_setter)
-    community_influence2_ranker = CommunityInfluenceTwoRanker(user_tweets_getter, friends_getter, ranking_setter)
-    community_production_ranker = CommunityProductionUtilityRanker(user_tweets_getter, friends_getter, ranking_setter)
-    community_consumption_ranker = CommunityConsumptionUtilityRanker(user_tweets_getter, friends_getter, ranking_setter)
-
-    # Use social support intersection ranker for core refinement
-    ranker_list_core_refiner = [community_influence1_ranker, community_social_support_ranker]
-    intersection_ranker_core_refiner = CommunitySSIntersectionRanker(ranker_list_core_refiner)
-
-    # Use [Influence 1, Influence 2, Production utility, Consumption utility] intersection ranker for community expansion
-    ranker_list_expansion = [community_influence1_ranker, community_influence2_ranker, community_production_ranker,
-                             community_consumption_ranker]
-    intersection_ranker_expansion = CommunityIntersectionRankerAll(ranker_list_expansion)
-
-    # Use social support intersection ranker for community expansion
-    # ranker_list_expansion = [community_influence1_ranker, community_social_support_ranker]
-    # intersection_ranker_expansion = CommunitySSIntersectionRanker(ranker_list_core_refiner)
 
     # TODO: test with different initial core users
-    initial_user_list = ['katharinehayhoe.com', 'edhawkins.bsky.social', 'indianaclimate.bsky.social',
-                         'peterthorne.bsky.social', 'meadekrosby.bsky.social', 'zlabe.bsky.social',
-                         'micefearboggis.bsky.social', 'mathewabarlow.bsky.social', 'irishrainforest.bsky.social',
-                         'seismatters.bsky.social']
+    initial_user_list = ['irishrainforest.bsky.social', 'bethsawin.bsky.social', 'katharinehayhoe.com',
+                         'easterncoyote.bsky.social', 'davidho.bsky.social', 'farhana.bsky.social',
+                         'danielrembrandt.bsky.social', 'wyeates.bsky.social', 'climatenews.bsky.social',
+                         'jksteinberger.bsky.social']
+
     # get user ids of the users in initial_user_list
     initial_user_list2 = []
     for initial_user in initial_user_list:
@@ -375,84 +345,32 @@ def run_community_expansion():
 
     file_path = str(get_project_root()) + "/data/community_expansion/"
 
-    dataset_creator_core_refiner = DatasetCreator(
+    dataset_creator = DatasetCreator(
         file_path,
         user_getter,
-        user_downloader,
         user_tweets_getter,
-        user_tweet_downloader,
-        friends_getter,
-        friend_downloader,
-        ranker_list_core_refiner)
-
-    dataset_creator_expansion = DatasetCreator(
-        file_path,
-        user_getter,
-        user_downloader,
-        user_tweets_getter,
-        user_tweet_downloader,
-        friends_getter,
-        friend_downloader,
-        ranker_list_expansion)
-
-    # Get the community of interest for the initial core users and do a second round of filtering for the core refiner
-    # candidates based on that
-    community_of_interest = GetCommunityOfInterest(user_getter, ranker_list_core_refiner, user_tweets_getter, friends_getter)
-
-    ranker_threshold_core_refiner = 0.09
-    community_of_interest_core_refiner, community_of_interest_core_refiner_score = \
-        community_of_interest.get_main_community(initial_user_list,
-                                                 ranker_threshold=ranker_threshold_core_refiner)
-    dataset_creator_core_refiner.write_community_of_interest_dataset(ranker_threshold_core_refiner,
-                                                                     "final_community_of_interest_core_refiner",
-                                                                     community_of_interest_core_refiner,
-                                                                     community_of_interest_core_refiner_score)
+        friends_getter)
 
     core_refiner = CoreRefiner(user_getter,
-                               user_downloader,
                                user_tweets_getter,
-                               user_tweet_downloader,
                                friends_getter,
-                               friend_downloader,
-                               ranker_list_core_refiner,
-                               intersection_ranker_core_refiner,
-                               dataset_creator_core_refiner,
-                               community_of_interest_core_refiner,
-                               community_of_interest_core_refiner_score)
+                               dataset_creator)
 
     initial_user_list = core_refiner.refine_core(
-        threshold=0.025, top_size=5, candidates_size=20, large_account_threshold=1.5, low_account_threshold=0.5,
-        follower_threshold=0.5, core_size=20, num_of_candidate=200, community=initial_user_list, mode=False)
-
-    # Get the community of interest for the refined core users and do a second round of filtering for the expanded
-    # community based on that
-    ranker_threshold_expansion = 0.015
-    community_of_interest_expansion, community_of_interest_expansion_score = \
-        community_of_interest.get_main_community(initial_user_list, ranker_threshold=ranker_threshold_expansion)
-    dataset_creator_expansion.write_community_of_interest_dataset(ranker_threshold_expansion,
-                                                                  "final_community_of_interest",
-                                                                  community_of_interest_expansion,
-                                                                  community_of_interest_expansion_score)
+        top_size=5, core_size=20, potential_candidates_size=100, candidates_size_round1=50, candidates_size_round2=30,
+        follower_threshold=0.4, large_account_threshold=1.5, low_account_threshold=0.05, friends_threshold=0.05,
+        tweets_threshold=0.05, sosu_threshold=0.025, community=initial_user_list)
 
     algorithm = CommunityExpansionAlgorithm(
         user_getter,
-        user_downloader,
         user_tweets_getter,
-        user_tweet_downloader,
         friends_getter,
-        friend_downloader,
-        ranker_list_expansion,
-        intersection_ranker_expansion,
-        dataset_creator_expansion,
-        community_of_interest_expansion,
-        community_of_interest_expansion_score)
+        dataset_creator)
 
-    # Since we are doing a second-round candidate filtering in community expansion algorithm, we relax the thresholds
-    # and increase candidates size
     algorithm.expand_community(
-        threshold=0.01, top_size=10, candidates_size=60,
-        large_account_threshold=2.5, low_account_threshold=0.1, follower_threshold=0.1,
-        num_of_candidate=500, community=initial_user_list, mode=False)
+        top_size=10, potential_candidates_size=1000, candidates_size_round1=500, candidates_size_round2=250,
+        follower_threshold=0.2, large_account_threshold=2.0, low_account_threshold=0.025, friends_threshold=0.025,
+        tweets_threshold=0.025, sosu_threshold=0.025, community=initial_user_list)
 
 
 @click.command()

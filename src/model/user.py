@@ -24,7 +24,6 @@ class User:
         @param listed_count the number of lists the user is a part of
         @param favourites_count the number of tweets this user has liked
         @param statuses_count the number of tweets the user has tweeted
-            (including retweets)
         @param default_profile a boolean that is true iff the user has not
             edited their theme or background
         @param default_profile_image a boolean that is true iff the user has

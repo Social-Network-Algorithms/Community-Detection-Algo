@@ -1,9 +1,7 @@
 from src.shared.logger_factory import LoggerFactory
 import src.clustering_experiments.create_social_graph_and_cluster as csgc
 import src.clustering_experiments.build_cluster_tree as bct
-from src.clustering_experiments.ranking_users_in_clusters import rank_users, get_new_intersection_ranking, \
-    get_simple_prod_ranking, get_simple_con_ranking, get_simple_followers_ranking
-
+from src.clustering_experiments.ranking_users_in_clusters import rank_users, get_new_intersection_ranking
 log = LoggerFactory.logger(__name__)
 
 
@@ -131,7 +129,15 @@ class JaccardCoreDetector():
         # chosen_cluster = self._auto_select_first_cluster(user_id, clusters)
         if not skip_download:
             self._download_cluster_tweets(chosen_cluster)
-        top_10_users = rank_users(screen_name, chosen_cluster) if chosen_cluster.top_users is None else chosen_cluster.top_users
+
+        # social support
+        sosu_ranker_scores = self.sosu_ranker.score_users(chosen_cluster.users)
+        sosu_ranking = list(
+            sorted(sosu_ranker_scores, key=lambda x: (sosu_ranker_scores[x][0], sosu_ranker_scores[x][1]),
+                   reverse=True))
+        top_10_users = sosu_ranking[:10]
+        top_10_users = [self.user_getter.get_user_by_id(u).screen_name for u in top_10_users]
+
         log.info("top_10 of chosen cluster:")
         log.info(top_10_users)
         curr_user = self.user_getter.get_user_by_screen_name(top_10_users[0])
@@ -152,8 +158,14 @@ class JaccardCoreDetector():
             readable_users = [self.user_getter.get_user_by_id(user_id).screen_name for user_id in clusters[i].users]
             log.info(readable_users)
             log.info(f"Top_10 users in Cluster id={clusters[i].id if use_id else i} before we download their tweets:")
-            screen_name = self.user_getter.get_user_by_id(user_id).screen_name
-            top_10_users = rank_users(screen_name, clusters[i]) if clusters[i].top_users is None else clusters[i].top_users
+
+            sosu_ranker_scores = self.sosu_ranker.score_users(clusters[i].users)
+            sosu_ranking = list(
+                sorted(sosu_ranker_scores, key=lambda x: (sosu_ranker_scores[x][0], sosu_ranker_scores[x][1]),
+                       reverse=True))
+            top_10_users = sosu_ranking[:10]
+            top_10_users = [self.user_getter.get_user_by_id(u).screen_name for u in top_10_users]
+
             log.info(top_10_users)
             log.info("")
         while True:
@@ -194,7 +206,15 @@ class JaccardCoreDetector():
         # chosen_cluster = self._user_select_cluster(user_id, clusters)
         if not skip_download:
             self._download_cluster_tweets(chosen_cluster)
-        top_10_users = rank_users(screen_name, chosen_cluster) if chosen_cluster.top_users is None else chosen_cluster.top_users
+
+        # social support
+        sosu_ranker_scores = self.sosu_ranker.score_users(chosen_cluster.users)
+        sosu_ranking = list(
+            sorted(sosu_ranker_scores, key=lambda x: (sosu_ranker_scores[x][0], sosu_ranker_scores[x][1]),
+                   reverse=True))
+        top_10_users = sosu_ranking[:10]
+        top_10_users = [self.user_getter.get_user_by_id(u).screen_name for u in top_10_users]
+
         curr_user = self.user_getter.get_user_by_screen_name(top_10_users[0])
         curr_user = curr_user.id
 
@@ -264,7 +284,6 @@ class JaccardCoreDetector():
     def _select_cluster2(self, user_id, top_10_users, clusters):
         """Returns the cluster where the modified Jaccard similarity with the top 10 users of the previous iteration is the highest."""
         log.info("Selecting Cluster based on modified Jaccard similarity")
-        screen_name = self.user_getter.get_user_by_id(user_id).screen_name
         cluster_scores = {cluster: 0.0 for cluster in clusters}
         top_10_users_ids = [self.user_getter.get_user_by_screen_name(top_user).id for top_user in top_10_users]
 
@@ -272,37 +291,6 @@ class JaccardCoreDetector():
             # social support
             sosu_ranker_scores = self.sosu_ranker.score_users(cluster.users)
             sosu_ranking = list(sorted(sosu_ranker_scores, key=lambda x: (sosu_ranker_scores[x][0], sosu_ranker_scores[x][1]), reverse=True))
-
-            # production
-            # prod_ranker_scores, _, _ = get_simple_prod_ranking(screen_name, cluster)
-            # prod_ranking = list(sorted(prod_ranker_scores, key=lambda x: (prod_ranker_scores[x][0], prod_ranker_scores[x][1]), reverse=True))
-            # cluster_scores[cluster] = sum([prod_ranker_scores[str(user_id)][0] for user_id in prod_ranking])
-
-            # consumption
-            # con_ranker_scores, _, _ = get_simple_con_ranking(screen_name, cluster)
-            # con_ranking = list(sorted(con_ranker_scores, key=lambda x: (con_ranker_scores[x][0], con_ranker_scores[x][1]), reverse=True))
-            # cluster_scores[cluster] = sum([con_ranker_scores[str(user_id)][0] for user_id in con_ranking])
-
-            # local followers
-            # local_followers_scores, _, _ = get_simple_followers_ranking(screen_name, cluster)
-            # local_followers_ranking = list(sorted(local_followers_scores, key=lambda x: (local_followers_scores[x]), reverse=True))
-            # cluster_scores[cluster] = sum([local_followers_scores[str(user_id)]for user_id in local_followers_ranking])
-
-            # social support + influence 1
-            # sosu, infl1, intersection_ranking = get_new_intersection_ranking(screen_name, cluster)
-            # cluster_scores[cluster] = sum([sosu[str(user_id)][0] for user_id in intersection_ranking])
-
-            # production + influence 1
-            # prod, infl1, intersection_ranking = get_simple_prod_ranking(screen_name, cluster)
-            # cluster_scores[cluster] = sum([prod[str(user_id)][0] for user_id in intersection_ranking])
-
-            # consumption + influence 1
-            # con, infl1, intersection_ranking = get_simple_con_ranking(screen_name, cluster)
-            # cluster_scores[cluster] = sum([con[str(user_id)][0] for user_id in intersection_ranking])
-
-            # local followers + influence 1
-            # local_followers, infl1, intersection_ranking = get_simple_followers_ranking(screen_name, cluster)
-            # cluster_scores[cluster] = sum([local_followers[str(user_id)] for user_id in intersection_ranking])
 
             for i, user_id in enumerate(top_10_users_ids):
                 if user_id in sosu_ranking:

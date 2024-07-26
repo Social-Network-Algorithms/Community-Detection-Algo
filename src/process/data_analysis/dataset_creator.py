@@ -1,21 +1,17 @@
 import csv
 
 from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
+from src.process.community_ranking.community_social_support_ranker import CommunitySocialSupportRanker
 
 
 class DatasetCreator:
     def __init__(self, file_path,
-                 user_getter, user_downloader,
-                 user_tweets_getter: UserTweetsGetter, user_tweet_downloader,
-                 user_friend_getter, user_friends_downloader,
-                 ranker_list):
+                 user_getter,
+                 user_tweets_getter: UserTweetsGetter,
+                 user_friend_getter):
         self.user_getter = user_getter
-        self.user_downloader = user_downloader
-        self.user_tweets_getter = user_tweets_getter
-        self.user_tweet_downloader = user_tweet_downloader
         self.user_friend_getter = user_friend_getter
-        self.user_friends_downloader = user_friends_downloader
-        self.ranker_list = ranker_list
+        self.ranker_list = [CommunitySocialSupportRanker(user_tweets_getter, user_friend_getter,None)]
         self.file_path = file_path
 
     def _get_local_follower_count(self, user, user_ids):
@@ -79,16 +75,4 @@ class DatasetCreator:
                         is_new_user])
             writer.writerow(row)
         # close the file
-        f.close()
-
-    def write_community_of_interest_dataset(self, influence1_threshold, filename_prefix, user_ids, score):
-        file_str = self.file_path + filename_prefix + '.txt'
-        with open(file_str, 'w') as f:
-            for user_id in user_ids:
-                user = self.user_getter.get_user_by_id(user_id)
-                f.write(user.screen_name)
-                f.write("\n")
-            f.write("average score = " + str(score))
-            # f.write("influence1 threshold = " + str(influence1_threshold))
-
         f.close()
