@@ -17,4 +17,4 @@ graphviz~=0.20.1
 gurobipy~=10.0.1
 bayanpy~=0.7.4
 pygraphviz~=1.11
-atproto~=0.0.46
+atproto~=0.0.49

@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import List
 
 from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
 from src.dao.user_tweets.setter.user_tweets_setter import UserTweetsSetter
@@ -67,12 +67,6 @@ class UserTweetDownloader():
         num_ids = len(user_ids)
         count = 0
         for id in user_ids:
-            # user = self.user_getter.get_user_by_id(id)
-            # tweet_count = self.raw_tweet_setter.get_num_user_tweets(id)
-            #
-            # if tweet_count >= 10:
-            #     log.info("Skipping " + str(id))
-            # else:
             self.download_user_tweets_by_user_id(id, months_back)
             count += 1
 
@@ -85,11 +79,9 @@ class UserTweetDownloader():
         if self.user_getter is not None:
             log.info("Checking Users")
             for user_id in user_ids:
-                # user = self.user_getter.get_user_by_id(user_id)
                 # Number of user tweets
                 count = len(self.user_tweets_getter.get_user_tweets(user_id))
 
-                # if count >= 3000 or (user is not None and user.statuses_count <= count):
                 if count >= 10:
                     log.info("Skipping " + str(user_id))
                 else:

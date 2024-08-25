@@ -1,11 +1,8 @@
 from src.dao.retweeted_users.setter.retweet_users_setter import RetweetUsersSetter
 from src.dao.bluesky.bluesky_dao import BlueSkyGetter
-from src.dao.user.setter.user_setter import UserSetter
 from src.dao.user_friend.setter.friend_setter import FriendSetter
 from src.dao.user_tweets.getter.user_tweets_getter import UserTweetsGetter
-from src.dao.user_tweets.setter.user_tweets_setter import UserTweetsSetter
 from src.process.download.user_downloader import BlueskyUserDownloader
-from src.process.download.friend_downloader import FriendDownloader
 from src.dao.user.getter.user_getter import UserGetter
 from src.dao.user_activity.getter.user_activity_getter import ActivityGetter
 from src.dao.user_friend.getter.friend_getter import FriendGetter
@@ -20,30 +17,22 @@ log = LoggerFactory.logger(__name__)
 class LocalNeighbourhoodDownloader():
     def __init__(self, bluesky_getter: BlueSkyGetter,
                  user_downloader: BlueskyUserDownloader,
-                 user_friends_downloader: FriendDownloader,
                  user_getter: UserGetter,
-                 user_setter: UserSetter,
                  user_friend_getter: FriendGetter,
                  user_activity_getter: ActivityGetter,
                  user_friend_setter: FriendSetter,
                  user_tweets_getter: UserTweetsGetter,
-                 user_tweets_setter: UserTweetsSetter,
                  retweeted_user_setter: RetweetUsersSetter,
-                 cleaned_user_friend_getter: FriendGetter,
                  local_neighbourhood_setter: LocalNeighbourhoodSetter,
                  user_activity: str):
         self.bluesky_getter = bluesky_getter
         self.user_downloader = user_downloader
-        self.user_friends_downloader = user_friends_downloader
         self.user_friend_getter = user_friend_getter
         self.user_getter = user_getter
-        self.user_setter = user_setter
         self.user_activity_getter = user_activity_getter
         self.user_friend_setter = user_friend_setter
         self.user_tweets_getter = user_tweets_getter
-        self.user_tweets_setter = user_tweets_setter
         self.retweeted_user_setter = retweeted_user_setter
-        self.cleaned_user_friend_getter = cleaned_user_friend_getter
         self.local_neighbourhood_setter = local_neighbourhood_setter
         self.user_activity = user_activity
 
@@ -94,7 +83,6 @@ class LocalNeighbourhoodDownloader():
 
             assert user_activities is not None
 
-            # Remove the check where id is in user_friends_ids ONLY FOR activity set friends because users have many friends
             if self.user_activity == 'friends':
                 user_dict[str(id)] = [str(id)
                                       for id in user_activities if id in user_friends_ids]

@@ -9,7 +9,7 @@ from typing import Dict, List
 
 
 class ClustererFactory():
-    def create_clusterer(type, social_graph_getter, cluster_setter, user_friends_getter):
+    def create_clusterer(social_graph_getter, cluster_setter, user_friends_getter):
         # Uncomment desired clusterer algorithm
         random.seed(0)
         # clusterer = LabelPropagationClusterer(social_graph_getter, cluster_setter, user_friends_getter)

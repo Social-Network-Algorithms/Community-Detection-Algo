@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 import click
 
+from src.process.download.follower_downloader import BlueskyFollowerDownloader
+from src.process.download.friend_downloader import FriendDownloader
+from src.process.download.local_neighbourhood_downloader import LocalNeighbourhoodDownloader
+from src.process.download.user_downloader import BlueskyUserDownloader
 from src.shared.logger_factory import LoggerFactory
 from src.shared.utils import get_project_root
 from src.tools.user_list_processor import UserListProcessor
@@ -9,8 +13,7 @@ import src.dependencies.injector as sdi
 # Download
 import src.tools.download_daemon as download_daemon
 from src.shared.utils import get_date
-from src.process.download.bluesky_downloader import BlueskyTweetDownloader, BlueskyFriendsDownloader, \
-    BlueskyFollowersDownloader
+from src.process.download.bluesky_downloader import BlueskyTweetDownloader
 
 # Raw Tweet Processing 
 from src.process.raw_tweet_processing.raw_tweet_processor import RawTweetProcessor
@@ -36,10 +39,6 @@ from src.process.clustering.MUISI.muisi_config_parser import MUISIConfigParser
 # MUISI Retweets
 from src.process.clustering.MUISI.retweets.muisi_retweet import MUISIRetweet, MUISIRetweetConfig
 
-# Community Expansion
-from src.process.community_expansion.community_expansion import CommunityExpansionAlgorithm
-from src.process.community_expansion.core_refiner import CoreRefiner
-from src.process.data_analysis.dataset_creator import DatasetCreator
 
 path = str(get_project_root()) + \
        "/src/scripts/config/create_social_graph_and_cluster_config.yaml"
@@ -68,11 +67,20 @@ def get_user():
 def run_download():
     click.echo("Provide the full path the the download config(leave blank to set to default)")
     twitter_getter = dao_module.get_twitter_getter()
-
+    bluesky_getter = dao_module.get_bluesky_getter()
+    user_setter = dao_module.get_user_setter()
     user_friends_getter = dao_module.get_user_friend_getter()
     user_friends_setter = dao_module.get_user_friend_setter()
     user_tweets_setter = dao_module.get_user_tweets_setter()
     user_followers_setter = dao_module.get_user_follower_setter()
+    user_downloader = BlueskyUserDownloader(bluesky_getter, user_setter)
+    user_getter = dao_module.get_user_getter()
+    user_activity_getter = dao_module.get_user_activity_getter(user_activity="friends")
+    user_friend_getter = dao_module.get_user_friend_getter()
+    user_friend_setter = dao_module.get_user_friend_setter()
+    user_tweets_getter = dao_module.get_user_tweets_getter()
+    retweeted_user_setter = dao_module.get_retweeted_users_setter()
+    local_neighbourhood_setter = dao_module.get_local_neighbourhood_setter(user_activity="friends")
 
     click.echo("Download Types:")
     click.echo("1. Twitter Tweet Download")
@@ -119,39 +127,39 @@ def run_download():
         click.echo("2. User Local Neighborhood")
         friend_type = click.prompt("Choose which to download", type=int)
 
-        friends_downloader = BlueskyFriendsDownloader()
+        friends_downloader = FriendDownloader(bluesky_getter, user_friend_getter, user_friend_setter, user_setter, user_getter)
         if friend_type == 1:
             click.echo("Downloading user friends")
             use_user_list, user_or_user_list, ulp = get_user()
             # num_friends = click.prompt("Number of Friends(leave blank to get all)", type=int)
             if use_user_list:
-                ulp.run_function_by_user_list(friends_downloader.gen_friends_ids_by_screen_name_or_id,
+                ulp.run_function_by_user_list(friends_downloader.download_friends_ids_by_screen_name,
                                               user_or_user_list, twitter_getter, user_friends_setter, None)
             else:
-                friends_downloader.gen_friends_ids_by_screen_name_or_id(user_or_user_list, twitter_getter,
-                                                                        user_friends_setter, None)
+                friends_downloader.download_friends_ids_by_screen_name(user_or_user_list)
         elif friend_type == 2:
             click.echo("Downloading user local neighborhood")
+            local_neighborhood_downloader = LocalNeighbourhoodDownloader(bluesky_getter, user_downloader, user_getter,
+                                                                         user_friend_getter, user_activity_getter,
+                                                                         user_friend_setter, user_tweets_getter,
+                                                                         retweeted_user_setter, local_neighbourhood_setter, "friends")
             use_user_list, user_or_user_list, ulp = get_user()
             if use_user_list:
-                ulp.run_function_by_user_list(friends_downloader.gen_user_local_neighborhood, user_or_user_list,
+                ulp.run_function_by_user_list(local_neighborhood_downloader.download_local_neighbourhood_by_screen_name, user_or_user_list,
                                               twitter_getter, user_friends_getter, user_friends_setter)
             else:
-                friends_downloader.gen_user_local_neighborhood(user_or_user_list, twitter_getter, user_friends_getter,
-                                                               user_friends_setter)
+                local_neighborhood_downloader.download_local_neighbourhood_by_screen_name(user_or_user_list)
         else:
             raise Exception("Invalid input")
     elif download_type == 3:
         click.echo("Downloading followers")
         use_user_list, user_or_user_list, ulp = get_user()
         # num_followers = click.prompt("Number of Followers(leave blank to get all)", type=int)
-        followers_downloader = BlueskyFollowersDownloader()
+        followers_downloader = BlueskyFollowerDownloader(bluesky_getter, user_followers_setter, user_setter)
         if use_user_list:
-            ulp.run_function_by_user_list(followers_downloader.gen_followers_by_screen_name_or_id, user_or_user_list,
-                                          twitter_getter, user_followers_setter, None)
+            ulp.run_function_by_user_list(followers_downloader.download_followers_ids_by_screen_name, user_or_user_list)
         else:
-            followers_downloader.gen_followers_by_screen_name_or_id(user_or_user_list, twitter_getter,
-                                                                    user_followers_setter, None)
+            followers_downloader.download_followers_ids_by_screen_name(user_or_user_list)
     else:
         raise Exception("Invalid input")
 
@@ -320,59 +328,6 @@ def run_clustering():
     else:
         raise Exception("Invalid input")
 
-
-def run_community_expansion():
-    click.echo("Community Expansion")
-    click.echo("Assume initial users are CORE users. "
-               "The cleaner initial users are, the better expansion result.")
-
-    bluesky_getter = dao_module.get_bluesky_getter()
-    user_tweets_getter = dao_module.get_user_tweets_getter()
-    friends_getter = dao_module.get_user_friend_getter()
-    user_getter = dao_module.get_user_getter()
-
-    # TODO: test with different initial core users
-    initial_user_list = ['irishrainforest.bsky.social', 'bethsawin.bsky.social', 'katharinehayhoe.com',
-                         'easterncoyote.bsky.social', 'davidho.bsky.social', 'farhana.bsky.social',
-                         'danielrembrandt.bsky.social', 'wyeates.bsky.social', 'climatenews.bsky.social',
-                         'jksteinberger.bsky.social']
-
-    # get user ids of the users in initial_user_list
-    initial_user_list2 = []
-    for initial_user in initial_user_list:
-        initial_user_list2.append(bluesky_getter.get_user_by_screen_name(initial_user).id)
-    initial_user_list = initial_user_list2
-
-    file_path = str(get_project_root()) + "/data/community_expansion/"
-
-    dataset_creator = DatasetCreator(
-        file_path,
-        user_getter,
-        user_tweets_getter,
-        friends_getter)
-
-    core_refiner = CoreRefiner(user_getter,
-                               user_tweets_getter,
-                               friends_getter,
-                               dataset_creator)
-
-    initial_user_list = core_refiner.refine_core(
-        top_size=5, core_size=20, potential_candidates_size=100, candidates_size_round1=50, candidates_size_round2=30,
-        follower_threshold=0.4, large_account_threshold=1.5, low_account_threshold=0.05, friends_threshold=0.05,
-        tweets_threshold=0.05, sosu_threshold=0.025, community=initial_user_list)
-
-    algorithm = CommunityExpansionAlgorithm(
-        user_getter,
-        user_tweets_getter,
-        friends_getter,
-        dataset_creator)
-
-    algorithm.expand_community(
-        top_size=10, potential_candidates_size=1000, candidates_size_round1=500, candidates_size_round2=250,
-        follower_threshold=0.2, large_account_threshold=2.0, low_account_threshold=0.025, friends_threshold=0.025,
-        tweets_threshold=0.025, sosu_threshold=0.025, community=initial_user_list)
-
-
 @click.command()
 def main():
     click.echo("====================================================")
@@ -398,8 +353,6 @@ def main():
         run_social_graph()
     elif int(val) == 5:
         run_clustering()
-    elif int(val) == 6:
-        run_community_expansion()
     else:
         raise Exception("Invalid input")
 

@@ -24,7 +24,7 @@ class MongoFriendGetter(FriendGetter):
     def get_user_friends_ids(self, user_id: str, count=None) -> List[str]:
         """Given a user id, return the ids of friends"""
         doc = self.friend_collection.find_one({"user_id":str(user_id)})
-        if doc is None:
+        if doc is None or len(doc["friends_ids"]) == 0:
             self.download_missing_friends(user_id, count)
             doc = self.friend_collection.find_one({"user_id":str(user_id)})
 

@@ -3,6 +3,7 @@ from src.process.community_ranking.community_ranker import CommunityRanker
 from typing import Dict, List
 from tqdm import tqdm
 
+
 class CommunitySocialSupportRanker(CommunityRanker):
     def __init__(self, user_tweets_getter: UserTweetsGetter, friends_getter, ranking_setter, alpha=1.0):
         self.friends_getter = friends_getter
@@ -56,17 +57,19 @@ class CommunitySocialSupportRanker(CommunityRanker):
 
         tweets = self.user_tweets_getter.get_tweets_by_user_ids(user_ids)
         # log.info("Get tweets from Database")
-        valid_tweets = [tweet for tweet in tweets if tweet.retweet_user_id != tweet.user_id] # omit self-retweets
+        valid_tweets = [tweet for tweet in tweets if tweet.retweet_user_id != tweet.user_id]  # omit self-retweets
 
         # Define helper functions
         tweets_by_retweet_group = self._group_by_retweet_id(valid_tweets)
+
         def get_retweets_of_tweet_id(tweet_id):
             return tweets_by_retweet_group.get(str(tweet_id), [])
+
         def get_later_retweets_of_tweet_id(tweet_id, created_at):
             return [tweet for tweet in get_retweets_of_tweet_id(tweet_id) if tweet.created_at > created_at]
+
         def is_direct_follower(a, b):
             return a in friends.get(b, [])
-
 
         user_tweets = [tweet for tweet in valid_tweets if str(tweet.user_id) == user_id]
 
@@ -74,8 +77,7 @@ class CommunitySocialSupportRanker(CommunityRanker):
         user_original_tweets = [tweet for tweet in user_tweets if tweet.retweet_id is None]
         for original_tweet in user_original_tweets:
             retweets = get_retweets_of_tweet_id(original_tweet.id)
-            retweets_from_direct_followers = [rtw for rtw in retweets if is_direct_follower(user_id, str(rtw.user_id))]
-            score += len(retweets_from_direct_followers)
+            score += len(retweets)
 
         # Score retweets
         user_retweets = [tweet for tweet in user_tweets if tweet.retweet_id is not None]

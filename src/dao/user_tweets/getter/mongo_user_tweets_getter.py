@@ -57,7 +57,7 @@ class MongoUserTweetsGetter(UserTweetsGetter):
     def get_user_tweets(self, user_id: str) -> List[Tweet]:
         """Given a user id, return the tweets"""
         doc = self.user_tweets_collection.find_one({"user_id":str(user_id)})
-        if doc is None:
+        if doc is None or len(doc["tweets"]) == 0:
             # Download the missing tweets
             self.download_missing_tweets(user_id)
             doc = self.user_tweets_collection.find_one({"user_id":str(user_id)})

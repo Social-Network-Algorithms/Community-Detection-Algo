@@ -15,20 +15,6 @@ class RawTweetProcessor():
     def __init__(self):
         nltk.download('stopwords')
 
-    # def gen_processed_global_tweets(self, tweet_getter: UserTweetsGetter, user_processed_tweet_setter: UserProcessedTweetsSetter) -> None:
-    #     """
-    #     Processes tweets retrieved from a getter, and stores them using the given getters
-    #
-    #     @param tweet_getter dao to retrieve tweets
-    #     @param user_processed_tweet_setter dao to store the processed tweets
-    #     """
-    #     global_tweet_list = tweet_getter.get_all_tweets()
-    #     processed_global_tweet_list = list(map(self._process_tweet_text, global_tweet_list))
-    #     for processed_global_tweet in processed_global_tweet_list:
-    #         user_processed_tweet_setter.store_processed_tweet(processed_global_tweet)
-    #     user_processed_tweet_setter.store_global_processed_tweets(processed_global_tweet_list)
-    #     # tweet_setter.update_global_tweet_state()
-
     def gen_processed_user_tweets(self, screen_name: str, user_getter: UserGetter, tweet_getter: UserTweetsGetter,
                                   user_processed_tweet_setter: UserProcessedTweetsSetter) -> None:
         """

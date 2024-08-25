@@ -1,5 +1,3 @@
-import networkx as nx
-from src.model.social_graph.social_graph import SocialGraph
 from src.model.social_graph.union_social_graph import UnionSocialGraph
 from src.model.social_graph.intersection_social_graph import IntersectionSocialGraph
 from src.dao.social_graph.setter.social_graph_setter import SocialGraphSetter
@@ -17,7 +15,7 @@ class SocialGraphConstructor():
 
     def construct_social_graph(self, seed_id, params=None, is_union=True, remove_unconnected_nodes=True):
         local_neighbourhood = self.local_neighbourhood_getter.get_local_neighbourhood(seed_id, params)
-        return self.construct_social_graph_from_local_neighbourhood(seed_id, local_neighbourhood, params=params, is_union=is_union)
+        return self.construct_social_graph_from_local_neighbourhood(local_neighbourhood, params=params, is_union=is_union)
 
     def construct_social_graph_from_local_neighbourhood(self, local_neighbourhood, params=None, is_union=True, remove_unconnected_nodes=True):
         social_graph = None

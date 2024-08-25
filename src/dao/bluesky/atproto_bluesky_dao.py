@@ -3,10 +3,9 @@ from time import sleep
 
 from atproto_client import SessionEvent, Session
 from atproto_firehose import FirehoseSubscribeLabelsClient, parse_subscribe_labels_message
-from click.core import batch
 
 import conf.credentials as credentials
-from typing import Union, List, Dict, Tuple, Optional
+from typing import List, Tuple, Optional
 from src.model.tweet import Tweet
 from src.model.user import User
 from src.dao.bluesky.bluesky_dao import BlueSkyGetter
@@ -55,11 +54,11 @@ class BlueSkyAuthenticator():
             self.save_session(session.export())
 
 
-class TweepyBlueSkyGetter(BlueSkyGetter):
+class ATProtoBlueSkyGetter(BlueSkyGetter):
     def __init__(self):
         self.client = BlueSkyAuthenticator().login()
 
-    def get_user_by_id(self, user_id: str) -> User:
+    def get_user_by_id(self, user_id: str) -> Optional[User]:
         logging.getLogger("httpx").setLevel(logging.WARNING)
         params = {'actor': user_id}
         at_user = None
@@ -74,7 +73,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
 
         return None
 
-    def get_user_by_screen_name(self, screen_name: str) -> User:
+    def get_user_by_screen_name(self, screen_name: str) -> Optional[User]:
         logging.getLogger("httpx").setLevel(logging.WARNING)
         params = {'actor': screen_name}
         at_user = None
@@ -140,7 +139,8 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
                     has_more = False
 
         except Exception as ex:
-            log.error("Could not download friends ids")
+            pass
+            # log.error("Could not download friends ids for " + str(user_id))
         return user_id, friends_user_ids
 
     def get_friends_users_by_user_id(self, user_id: str, num_friends=0) -> Tuple[str, List[User]]:
@@ -200,7 +200,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
                     has_more = False
 
         except Exception as ex:
-            log.error("Could not download followe ids")
+            log.error("Could not download follower ids")
 
         return user_id, followers_user_ids
 
@@ -258,7 +258,7 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
     def get_users_relationships(self, user_id_1: str, user_list) -> dict:
         logging.getLogger("httpx").setLevel(logging.WARNING)
         relationships_dict = {}
-        for x in batch(user_list, 30):
+        for x in self.batch(user_list, 30):
             params = {'actor': user_id_1, 'others': list(x)}
             try:
                 response = self.client.app.bsky.graph.get_relationships(params=params)
@@ -274,3 +274,8 @@ class TweepyBlueSkyGetter(BlueSkyGetter):
                 pass
 
         return relationships_dict
+
+    def batch(self, iterable, n=1):
+        l = len(iterable)
+        for ndx in range(0, l, n):
+            yield iterable[ndx:min(ndx + n, l)]

@@ -14,7 +14,7 @@ class DatasetCreator:
         self.ranker_list = [CommunitySocialSupportRanker(user_tweets_getter, user_friend_getter,None)]
         self.file_path = file_path
 
-    def _get_local_follower_count(self, user, user_ids):
+    def get_local_follower_count(self, user, user_ids):
         count = 0
         for user2 in user_ids:
             friend2 = self.user_friend_getter.get_user_friends_ids(user2)
@@ -27,7 +27,7 @@ class DatasetCreator:
 
         return count
 
-    def _get_local_following_count(self, user, user_ids):
+    def get_local_following_count(self, user, user_ids):
         friend1 = self.user_friend_getter.get_user_friends_ids(user)
         if friend1 is None:
             count = 0
@@ -68,8 +68,8 @@ class DatasetCreator:
             row = [rank, user_ids[i], user_info.screen_name]
             for j in range(len(self.ranker_list)):
                 row.append(scores[j][user_id])
-            row.extend([self._get_local_follower_count(user_id, user_ids),
-                        self._get_local_following_count(user_id, user_ids),
+            row.extend([self.get_local_follower_count(user_id, user_ids),
+                        self.get_local_following_count(user_id, user_ids),
                         user_info.followers_count,
                         user_info.friends_count,
                         is_new_user])

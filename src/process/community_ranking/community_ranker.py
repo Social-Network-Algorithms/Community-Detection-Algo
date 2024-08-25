@@ -1,9 +1,10 @@
+from src.dao.user.getter.user_getter import UserGetter
 from src.model.ranking import Ranking
 from typing import List
 
 
 class CommunityRanker():
-    def __init__(self, cluster_getter, user_getter, ranking_setter):
+    def __init__(self, cluster_getter, user_getter: UserGetter, ranking_setter):
         self.cluster_getter = cluster_getter
         self.user_getter = user_getter
         self.ranking_setter = ranking_setter

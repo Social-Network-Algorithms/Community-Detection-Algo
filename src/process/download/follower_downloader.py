@@ -3,8 +3,8 @@ class BlueskyFollowerDownloader():
     Download Bluesky Followers for use in future algorithms.
     """
 
-    def __init__(self, tweepy_getter, user_follower_setter, user_setter):
-        self.bluesky_getter = tweepy_getter
+    def __init__(self, bluesky_getter, user_follower_setter, user_setter):
+        self.bluesky_getter = bluesky_getter
         self.user_follower_setter = user_follower_setter
         self.user_setter = user_setter
 

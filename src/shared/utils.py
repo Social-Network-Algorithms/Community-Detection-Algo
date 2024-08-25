@@ -107,3 +107,10 @@ def print_progress(i, total):
     percent_done = i/total * 100
     if passes_interval(i, total, 2):
         print("Done " + str(math.floor(percent_done)) + "% of process")
+
+def jaccard_similarity(user_list1, user_list2):
+    intersection = len(set(user_list1).intersection(set(user_list2)))
+    union = (len(user_list1) + len(user_list2)) - intersection
+    if union == 0:
+        return 0
+    return float(intersection) / union

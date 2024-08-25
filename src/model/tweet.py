@@ -1,4 +1,4 @@
-from typing import Dict, Union, Optional
+from typing import Dict, Optional
 import json
 from atproto_client.models import AppBskyFeedGetAuthorFeed, AppBskyFeedDefs, AppBskyEmbedRecord
 
@@ -13,7 +13,8 @@ class Tweet:
                  retweet_user_id: Optional[str], quote_id: Optional[str],
                  quote_user_id: Optional[str]):
         """
-        Default constructor for a tweet
+        Default constructor for a tweet.
+        Key = (id, user_id)
 
         @param id the tweet's unique id
         @param user_id the id of the user who tweeted the tweet

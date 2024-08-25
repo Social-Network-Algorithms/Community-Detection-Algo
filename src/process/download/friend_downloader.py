@@ -2,6 +2,7 @@ from src.shared.logger_factory import LoggerFactory
 
 log = LoggerFactory.logger(__name__)
 
+
 class FriendDownloader():
     """
     Download Bluesky Followers for use in future algorithms.
@@ -57,12 +58,11 @@ class FriendDownloader():
             friend_user_ids = [user.id for user in friends_users]
             self.user_friend_setter.store_friends(str(user_id), friend_user_ids)
 
-
     def download_friends_users_by_screen_name(self, screen_name: str, num_friends=0) -> None:
         """
         Gets a list of friends of a user by id
 
-        @param user_id the id of the user to query on
+        @param screen_name the user name of the user to query on
         @param num_friends the maximum number of friends to retrieve
 
         @return a list of ids of friends for the given user

@@ -127,9 +127,9 @@ class DAOModule():
         return UserDAOFactory.create_setter(
             self.output_datastore["Users"])
 
-    # def get_user_follower_getter(self):
-    #     return UserFollowerDAOFactory.create_getter(
-    #         self.input_datastore["Followers"])
+    def get_user_follower_getter(self):
+        return UserFollowerDAOFactory.create_getter(
+            self.input_datastore["Followers"])
 
     def get_user_follower_setter(self):
         return UserFollowerDAOFactory.create_setter(

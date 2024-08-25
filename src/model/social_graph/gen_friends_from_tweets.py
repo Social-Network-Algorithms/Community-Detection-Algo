@@ -1,7 +1,6 @@
 import src.dependencies.injector as sdi
 from src.shared.logger_factory import LoggerFactory
-from src.process.data_cleaning.data_cleaning_distributions import jaccard_similarity
-from src.shared.utils import get_project_root
+from src.shared.utils import get_project_root, jaccard_similarity
 from src.model.local_neighbourhood import LocalNeighbourhood
 # Just for type signatures
 from typing import List

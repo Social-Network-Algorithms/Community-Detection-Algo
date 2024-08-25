@@ -43,11 +43,9 @@ class SocialSupportRanker(Ranker):
             tweets += user_tweets
         # Omit self-retweets
         tweets = [tweet for tweet in tweets if tweet.user_id != tweet.retweet_user_id]
-        # Remove duplicate tweets
-        tweets = list({tweet.id: tweet for tweet in tweets}.values())
         tweets_by_retweet_group = self._group_by_retweet_id(tweets)
         def get_retweets_of_tweet_id(tweet_id):
-            return tweets_by_retweet_group.get(str(tweet_id), [])
+            return tweets_by_retweet_group.get(tweet_id, [])
         def get_later_retweets_of_tweet_id(tweet_id, created_at):
             return [tweet for tweet in get_retweets_of_tweet_id(tweet_id) if tweet.created_at > created_at]
         def is_direct_follower(a, b):
@@ -59,33 +57,30 @@ class SocialSupportRanker(Ranker):
             scores[id][1] = user.followers_count
             user_tweets = [tweet for tweet in tweets if str(tweet.user_id) == id]
             original_tweet_ids = [tweet.id for tweet in user_tweets if tweet.retweet_id is None]
+
             for original_tweet_id in original_tweet_ids:
                 retweets = get_retweets_of_tweet_id(original_tweet_id)
                 scores[id][0] += len(retweets)
-            # if id == '929791330519322624': print(scores[id][0])
+
             user_retweets = [tweet for tweet in user_tweets if tweet.retweet_id is not None]
             for user_retweet in user_retweets:
                 retweets = get_later_retweets_of_tweet_id(user_retweet.retweet_id, user_retweet.created_at)
                 # The person who retweeted is a direct follower of id.
                 retweets_from_direct_followers = [rtw for rtw in retweets if is_direct_follower(id, str(rtw.user_id))]
                 scores[id][0] += len(retweets_from_direct_followers) * self.alpha
-            # if id == '929791330519322624': 
-            #     print(scores[id][0])
-            #     print("User tweets: ", len(user_tweets))
-            #     print("Original tweets: ", len(original_tweet_ids))
-            #     print("User retweets: ", len(user_retweets))
+
         return scores
 
     def _group_by_retweet_id(self, tweets) -> Dict:
         # Puts all tweets with the same retweet_id in the same list
         # Returns: A dictionary where the key is the retweet_id and
         # the value is the list of tweets with that retweet_id
-        dict = {}
+        retweet_id_map = {}
         for tweet in tweets:
             key = str(tweet.retweet_id)
-            if key in dict:
-                dict[key].append(tweet)
+            if key in retweet_id_map:
+                retweet_id_map[key].append(tweet)
             else:
-                dict[key] = [tweet]
+                retweet_id_map[key] = [tweet]
 
-        return dict
+        return retweet_id_map

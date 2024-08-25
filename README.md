@@ -1,9 +1,3 @@
-# SNACES
-
-SNACES (Social Network Algorithm Contained Experiment System)
-is a Python library for downloading and analyze Twitter data, by making
-use of the Tweepy library and the Twitter API.
-
 ## Setup
 
 ### BlueSky Account
@@ -25,10 +19,37 @@ Python 3.9 is required for the following installation steps.
 Follow the instructions in the main README.md file to setup the environment.
 
 ## Running
+The main program for community detection consisting of:
+- Detection of influential users
+- Expansion of the community
+- Running tests to assess the quality of the community
 
-1. The main program for core detection can be started by running 
-`python detect_core_jaccard.py -n {seed_user} -act {user_activity}`. For example 
-`python detect_core_jaccard.py -n "doctorvive.bsky.social" -act "user retweets"` for seed user "doctorvive.bsky.social" and user activity "user retweets".
+can be started by running
+` python run_community_detection.py -n {seed_user}`. For example
+` python run_community_detection.py -n "doctorvive.bsky.social""` for seed user "doctorvive.bsky.social".
 
-2. The main program for community expansion can be started by running `python ./SNACES.py`. This will trigger the main program to loop, which will then prompt you to input options for which process to trigger.
-Choose option 6 for community expansion.
+The results for the community users and the tests can be found under the data/{seed_user}/expansion and data/{seed_user}/tests directories respectively.
+
+## Current Work
+
+### dao module
+
+The dao module includes all the getter and setters that connects the data storage with our program.
+
+### model module
+
+The model module includes the instances such as User and Tweets that are used in our program
+
+### Utility Functions
+The implementation of the user and community utility function, including social support utility that is being used 
+in our algorithm can be found under `/src/process/community_ranking` and `/src/process/ranking`.
+
+### Community Expansion
+
+The main code for community expansion is in 
+`/src/process/community_expansion/`
+
+### Core Detection
+
+The main code for community expansion is in 
+`/src/process/core_detection/`
