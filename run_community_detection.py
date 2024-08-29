@@ -54,12 +54,12 @@ def detect_community(seed, influential_users):
     influential_users = core_refiner.refine_core(
         core_size=20, potential_candidates_size=600, threshold_round2=0.2,
         follower_threshold=0.4, large_account_threshold=5.0, low_account_threshold=0.25, friends_threshold=0.15,
-        tweets_threshold=0.15, retweeted_users_threshold=0.5, community=influential_users)
+        tweets_threshold=0.15, retweeted_users_threshold=0.4, community=influential_users)
 
     community = community_expansion.expand_community(
         top_size=20, potential_candidates_size=1200, threshold_round2=0.2,
         follower_threshold=0.2, large_account_threshold=5.0, low_account_threshold=0.25, friends_threshold=0.15,
-        tweets_threshold=0.15, retweeted_users_threshold=0.4, community=influential_users)
+        tweets_threshold=0.15, retweeted_users_threshold=0.3, community=influential_users)
 
     return community
 

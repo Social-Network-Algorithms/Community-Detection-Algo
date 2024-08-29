@@ -74,11 +74,16 @@ class JaccardCoreDetector():
                 log.exception(e)
                 exit()
 
+        seeds.remove(curr_user_id)
+        seeds.append(curr_user_id)
+        seed_clusters.remove(top_10_users)
+        seed_clusters.append(top_10_users)
         # log.info("The previous user id list is " + str(prev_user_id))
         # log.info("The final user for initial user " + str(initial_user_id) + " is "
         #          + self.user_getter.get_user_by_id(str(curr_user_id)).screen_name)
         # This is the core
         log.info(f"The top 10 users for the selected cluster in the last iteration were: {top_10_users}")
+        log.info(f"seeds: {seeds}")
         # log.info(f"The top 10 users for the selected cluster in each iteration were:")
         # for top in top_10:
         #     log.info(top)

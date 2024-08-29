@@ -7,6 +7,10 @@ from src.shared.utils import get_project_root
 
 PATH = str(get_project_root()) + "/data/tests/"
 
+def addlabels(x, y):
+    for i in range(len(x)):
+        plt.text(i, y[i], y[i])
+
 class TestCoreDetection(CommunityQualityTests):
     def run_tests(self, community, seeds, seed_clusters):
         self.test_1(community, seeds)
@@ -19,30 +23,17 @@ class TestCoreDetection(CommunityQualityTests):
         test 1: Social rank of seed users at the different iteration should increase
         plot the social support score of the users in the final community and highlight the seed users in the plot
         """
-        community_scores = self.community_social_support_ranker.score_users(community, community)
-        sorted_community_scores = dict(sorted(community_scores.items(), key=lambda item: item[1], reverse=True))
+        seed_scores = self.community_social_support_ranker.score_users(seeds, community)
+        x_vals = list(range(0, len(seeds)))
+        y_vals = list(seed_scores.values())
 
-        x_vals = list(range(0, len(community)))
-        y_vals = list(sorted_community_scores.values())
-        path = PATH + self.seed + "/core detection correctness test 1"
+        path = PATH + self.seed + "/" + "core detection correctness test 1"
         plt.figure("core detection correctness test 1")
-
-        color_map = []
-
-        for x in x_vals:
-            user = community[x]
-            if user in seeds:
-                pos = seeds.index(user)
-                alpha = (pos + 1) / len(seeds)
-                color_map.append([1, 0.4, 0.3, alpha])
-            else:
-                color_map.append([0.7, 0.7, 0.7, 1])
-
-        plt.bar(x_vals, y_vals, color=color_map)
-        plt.ylabel('Final social support score')
-        plt.xlabel('users ranked from highest to lowest score')
-        plt.title('Final score of users in the final community with seed users of each iteration highlighted. \n '
-                  'Darker color indicates the seed was added in a later iteration.')
+        plt.bar(x_vals, y_vals)
+        addlabels(x_vals, y_vals)
+        plt.ylabel('social support score')
+        plt.xlabel('seed users')
+        plt.title("Final score of seed users in the final community")
         plt.savefig(path)
 
     def test_2(self, community, seed_clusters: List[List[str]]):
